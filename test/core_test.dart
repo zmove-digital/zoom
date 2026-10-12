@@ -1,0 +1,105 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:financas_jovem/core/utils/formatters.dart';
+import 'package:financas_jovem/data/models/agenda_entry.dart';
+import 'package:financas_jovem/data/models/category.dart';
+import 'package:financas_jovem/data/models/transaction.dart';
+
+void main() {
+  group('Money', () {
+    test('parse aceita vírgula e ponto', () {
+      expect(Money.parse('1.234,56'), 1234.56);
+      expect(Money.parse('12,5'), 12.5);
+      expect(Money.parse('9.99'), 9.99);
+    });
+
+    test('round2 arredonda centavos', () {
+      expect(Money.round2(10.005), 10.01);
+      expect(Money.round2(9.999), 10.0);
+    });
+  });
+
+  group('DateHelpers', () {
+    test('isSameMonth funciona', () {
+      expect(
+        DateHelpers.isSameMonth(DateTime(2026, 5, 1), DateTime(2026, 5, 31)),
+        isTrue,
+      );
+      expect(
+        DateHelpers.isSameMonth(DateTime(2026, 5, 31), DateTime(2026, 6, 1)),
+        isFalse,
+      );
+    });
+  });
+
+  group('Transaction', () {
+    test('json roundtrip preserva dados', () {
+      final Transaction tx = Transaction(
+        id: 'abc',
+        type: TransactionType.income,
+        amount: 150.5,
+        categoryId: 'cat1',
+        date: DateTime(2026, 5, 20, 10, 30),
+        description: 'Freela',
+        notes: 'ok',
+      );
+      final Transaction restored = Transaction.fromJson(tx.toJson());
+      expect(restored.id, 'abc');
+      expect(restored.type, TransactionType.income);
+      expect(restored.amount, 150.5);
+      expect(restored.description, 'Freela');
+      expect(restored.signedAmount, 150.5);
+    });
+
+    test('despesa tem valor negativo assinado', () {
+      final Transaction tx = Transaction(
+        id: 'x',
+        type: TransactionType.expense,
+        amount: 12,
+        categoryId: 'c',
+        date: DateTime(2026),
+      );
+      expect(tx.signedAmount, -12);
+    });
+  });
+
+  group('Category', () {
+    test('kind parsing tolera valores desconhecidos', () {
+      expect(categoryKindFromName('income'), CategoryKind.income);
+      expect(categoryKindFromName('nada'), CategoryKind.both);
+    });
+
+    test('supportsIncome e supportsExpense respeitam kind', () {
+      final Category income = Category(
+        id: 'a',
+        name: 'Salario',
+        kind: CategoryKind.income,
+        colorHex: '06D6A0',
+        iconCodePoint: 0xe263,
+      );
+      expect(income.supportsIncome, isTrue);
+      expect(income.supportsExpense, isFalse);
+
+      final Color color = colorFromHex('06D6A0');
+      expect(color, isA<Color>());
+      expect(colorToHex(color), '06D6A0');
+    });
+  });
+
+  group('AgendaEntry', () {
+    test('json roundtrip preserva mood e tags', () {
+      final AgendaEntry entry = AgendaEntry(
+        id: 'e1',
+        date: DateTime(2026, 5, 1),
+        title: 'Bom dia',
+        content: 'Texto livre',
+        mood: Mood.great,
+        tags: <String>['dieta', 'foco'],
+      );
+      final AgendaEntry restored = AgendaEntry.fromJson(entry.toJson());
+      expect(restored.mood, Mood.great);
+      expect(restored.tags, <String>['dieta', 'foco']);
+      expect(restored.content, 'Texto livre');
+    });
+  });
+}
