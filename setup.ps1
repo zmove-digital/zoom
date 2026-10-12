@@ -1,10 +1,10 @@
-# Configura o projeto Grana no seu computador.
+# Configura o projeto ZOOM no seu computador.
 # Uso:  powershell -ExecutionPolicy Bypass -File setup.ps1
 
 $ErrorActionPreference = "Stop"
 Set-Location -Path $PSScriptRoot
 
-Write-Host "=== Setup do projeto Grana ===" -ForegroundColor Cyan
+Write-Host "=== Setup do projeto ZOOM ===" -ForegroundColor Cyan
 
 # 1) Verifica o Flutter
 $flutter = Get-Command flutter -ErrorAction SilentlyContinue
@@ -32,8 +32,8 @@ flutter --version
 
 # 2) Gera as pastas de plataforma sem tocar no lib/ e pubspec.yaml
 Write-Host "Gerando pastas de plataforma (android, ios, windows)..." -ForegroundColor Cyan
-$tmp = Join-Path $env:TEMP "grana_platforms_$([guid]::NewGuid().ToString('N'))"
-flutter create --org br.com.grana --project-name financas_jovem --platforms=android,ios,windows $tmp
+$tmp = Join-Path $env:TEMP "zoom_platforms_$([guid]::NewGuid().ToString('N'))"
+flutter create --org br.com.zmove --project-name zoom --platforms=android,ios,windows $tmp
 
 foreach ($p in @("android", "ios", "windows")) {
     if (Test-Path ".\$p") {

@@ -388,11 +388,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
     try {
       final Directory dir = await getTemporaryDirectory();
       final File file = File(
-          '${dir.path}${Platform.pathSeparator}relatorio_grana.csv');
+          '${dir.path}${Platform.pathSeparator}relatorio_zoom.csv');
       await file.writeAsString(csv.toString(), encoding: utf8);
       await Share.shareXFiles(
         <XFile>[XFile(file.path, mimeType: 'text/csv')],
-        subject: 'Relatório Grana - ${_periodLabel()}',
+        subject: 'Relatório ZOOM - ${_periodLabel()}',
       );
     } catch (_) {
       if (mounted) {

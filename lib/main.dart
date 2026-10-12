@@ -41,7 +41,7 @@ Future<void> main() async {
         Provider<SoundService>(create: (_) => SoundService()),
         Provider<LocalDatabase>.value(value: db),
       ],
-      child: const GranaApp(),
+      child: const ZoomApp(),
     ),
   );
 }

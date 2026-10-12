@@ -28,7 +28,7 @@ class BackupService {
     final DateTime now = DateTime.now();
     final String stamp =
         '${now.year}${_two(now.month)}${_two(now.day)}_${_two(now.hour)}${_two(now.minute)}';
-    final File file = File('${dir.path}${Platform.pathSeparator}grana_backup_$stamp.json');
+    final File file = File('${dir.path}${Platform.pathSeparator}zoom_backup_$stamp.json');
     final String encoded =
         const JsonEncoder.withIndent('  ').convert(buildPayload());
     await file.writeAsString(encoded, flush: true);
@@ -37,10 +37,10 @@ class BackupService {
 
   Future<void> shareBackup({String? email}) async {
     final File file = await writeBackupFile();
-    final String subject = 'Backup Grana - ${DateTime.now().toIso8601String().substring(0, 10)}';
+    final String subject = 'Backup ZOOM - ${DateTime.now().toIso8601String().substring(0, 10)}';
     final String body = email == null || email.isEmpty
-        ? 'Segue o backup dos meus dados do Grana. Guarde este arquivo em local seguro.'
-        : 'Segue o backup dos meus dados do Grana. Guarde este arquivo em local seguro.\n\nDica: envie para $email.';
+        ? 'Segue o backup dos meus dados do ZOOM. Guarde este arquivo em local seguro.'
+        : 'Segue o backup dos meus dados do ZOOM. Guarde este arquivo em local seguro.\n\nDica: envie para $email.';
     try {
       await Share.shareXFiles(
         <XFile>[XFile(file.path, mimeType: 'application/json')],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppInfo {
-  static const String appName = 'Grana';
+  static const String appName = 'ZOOM';
   static const String tagline = 'Seu dinheiro, do seu jeito';
   static const String version = '1.0.0';
 }

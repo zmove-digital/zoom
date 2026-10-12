@@ -16,9 +16,9 @@ class NotificationService {
   bool _exactAllowed = false;
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'grana_lembretes',
+    'zoom_lembretes',
     'Lembretes e alarmes',
-    description: 'Avisos de contas, metas e agenda do Grana',
+    description: 'Avisos de contas, metas e agenda do ZOOM',
     importance: Importance.max,
   );
 
@@ -130,7 +130,7 @@ class NotificationService {
     try {
       await _plugin.zonedSchedule(
         id,
-        reminder.title.isEmpty ? 'Lembrete do Grana' : reminder.title,
+        reminder.title.isEmpty ? 'Lembrete do ZOOM' : reminder.title,
         reminder.message,
         when,
         details,
@@ -183,11 +183,11 @@ class NotificationService {
       await _plugin.zonedSchedule(
         NotificationIds.backupReminder,
         'Hora do backup!',
-        'Faca uma copia dos seus dados do Grana e envie para o seu e-mail.',
+        'Faca uma copia dos seus dados do ZOOM e envie para o seu e-mail.',
         when,
         const NotificationDetails(
           android: AndroidNotificationDetails(
-            'grana_backup',
+            'zoom_backup',
             'Backup',
             channelDescription: 'Lembrete para enviar backup por e-mail',
             importance: Importance.defaultImportance,
@@ -236,7 +236,7 @@ class NotificationService {
         body,
         const NotificationDetails(
           android: AndroidNotificationDetails(
-            'grana_geral',
+            'zoom_geral',
             'Geral',
             importance: Importance.high,
             priority: Priority.high,

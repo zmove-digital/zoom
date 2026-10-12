@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "br.com.grana" "\0"
-            VALUE "FileDescription", "financas_jovem" "\0"
+            VALUE "CompanyName", "br.com.zmove" "\0"
+            VALUE "FileDescription", "ZOOM" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "financas_jovem" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 br.com.grana. All rights reserved." "\0"
-            VALUE "OriginalFilename", "financas_jovem.exe" "\0"
-            VALUE "ProductName", "financas_jovem" "\0"
+            VALUE "InternalName", "zoom" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 br.com.zmove. All rights reserved." "\0"
+            VALUE "OriginalFilename", "zoom.exe" "\0"
+            VALUE "ProductName", "ZOOM" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

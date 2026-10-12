@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "br.com.grana.financas_jovem"
+    namespace = "br.com.zmove.zoom"
     compileSdk = flutter.compileSdkVersion
 
     compileOptions {
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "br.com.grana.financas_jovem"
+        applicationId = "br.com.zmove.zoom"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

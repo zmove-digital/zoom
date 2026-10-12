@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:financas_jovem/core/utils/formatters.dart';
-import 'package:financas_jovem/data/models/agenda_entry.dart';
-import 'package:financas_jovem/data/models/category.dart';
-import 'package:financas_jovem/data/models/transaction.dart';
+import 'package:zoom/core/utils/formatters.dart';
+import 'package:zoom/data/models/agenda_entry.dart';
+import 'package:zoom/data/models/category.dart';
+import 'package:zoom/data/models/transaction.dart';
 
 void main() {
   group('Money', () {

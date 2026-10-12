@@ -1,4 +1,4 @@
-# 🪙 Grana — Gestor financeiro pessoal
+# 🪙 ZOOM — Gestor financeiro pessoal
 
 App **100% offline** para o público jovem, feito em **Flutter**. Roda em Android, iOS, Windows, macOS e Linux, pronto para publicar no **Google Play** e na **App Store**.
 
@@ -48,7 +48,7 @@ flutter test
 
 Se o Flutter não estiver instalado, o `setup.ps1` pergunta se quer baixá-lo automaticamente (estável, Windows).
 
-> Se preferir fazer na mão: `flutter create --org br.com.grana --project-name financas_jovem --platforms=android,ios,windows .` na pasta vazia e depois copie os arquivos deste `lib/`. Nunca rode `flutter create` numa pasta já populada sem antes fazer cópia de segurança do `lib/` e do `pubspec.yaml`.
+> Se preferir fazer na mão: `flutter create --org br.com.zmove --project-name zoom --platforms=android,ios,windows .` na pasta vazia e depois copie os arquivos deste `lib/`. Nunca rode `flutter create` numa pasta já populada sem antes fazer cópia de segurança do `lib/` e do `pubspec.yaml`.
 
 ---
 

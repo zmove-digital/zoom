@@ -17,7 +17,7 @@ class LocalDatabase {
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
-    final File file = File('${dir.path}${Platform.pathSeparator}grana_db.json');
+    final File file = File('${dir.path}${Platform.pathSeparator}zoom_db.json');
     Map<String, dynamic> data = <String, dynamic>{};
     if (await file.exists()) {
       try {

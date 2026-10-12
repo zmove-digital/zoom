@@ -7,15 +7,15 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/shell/app_shell.dart';
 import 'screens/lock/lock_screen.dart';
 
-class GranaApp extends StatelessWidget {
-  const GranaApp({super.key});
+class ZoomApp extends StatelessWidget {
+  const ZoomApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final SettingsController settings = context.watch<SettingsController>();
 
     return MaterialApp(
-      title: 'Grana',
+      title: 'ZOOM',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.build(settings.settings, Brightness.light),
       darkTheme: AppTheme.build(settings.settings, Brightness.dark),
