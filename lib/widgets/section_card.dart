@@ -35,6 +35,7 @@ class StatCard extends StatelessWidget {
     required this.color,
     this.caption,
     this.onTap,
+    this.hidden = false,
     super.key,
   });
 
@@ -44,6 +45,7 @@ class StatCard extends StatelessWidget {
   final Color color;
   final String? caption;
   final VoidCallback? onTap;
+  final bool hidden;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +81,7 @@ class StatCard extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              value,
+              hidden ? '••••••' : value,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
