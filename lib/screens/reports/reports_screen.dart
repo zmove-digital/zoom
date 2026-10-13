@@ -32,14 +32,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
   _PieMode _pieMode = _PieMode.expense;
   DateTime? _customFrom;
   DateTime? _customTo;
+  _Period _catPeriod = _Period.month;
+  DateTime? _catFrom;
+  DateTime? _catTo;
   final Set<String> _selectedCategories = <String>{};
 
   _PieMode get _nextPieMode =>
       _PieMode.values[(_pieMode.index + 1) % _PieMode.values.length];
 
-  (DateTime, DateTime) _range() {
+  (DateTime, DateTime) _range() =>
+      _rangeFor(_period, _customFrom, _customTo);
+
+  (DateTime, DateTime) _catRange() =>
+      _rangeFor(_catPeriod, _catFrom, _catTo);
+
+  (DateTime, DateTime) _rangeFor(
+      _Period period, DateTime? customFrom, DateTime? customTo) {
     final DateTime now = DateTime.now();
-    switch (_period) {
+    switch (period) {
       case _Period.month:
         return (DateHelpers.startOfMonth(now), DateHelpers.endOfMonth(now));
       case _Period.last30:
@@ -53,15 +63,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
       case _Period.all:
         return (DateTime(2000), DateTime(2100));
       case _Period.custom:
-        final DateTime from =
-            _customFrom ?? DateHelpers.startOfMonth(now);
-        final DateTime to = _customTo ?? DateHelpers.endOfMonth(now);
+        final DateTime from = customFrom ?? DateHelpers.startOfMonth(now);
+        final DateTime to = customTo ?? DateHelpers.endOfMonth(now);
         return (from, DateTime(to.year, to.month, to.day, 23, 59, 59));
     }
   }
 
-  String _periodLabel() {
-    switch (_period) {
+  String _periodLabel() => _labelFor(_period, _customFrom, _customTo);
+
+  String _catPeriodLabel() => _labelFor(_catPeriod, _catFrom, _catTo);
+
+  String _labelFor(
+      _Period period, DateTime? customFrom, DateTime? customTo) {
+    switch (period) {
       case _Period.month:
         return 'Este mês';
       case _Period.last30:
@@ -71,26 +85,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
       case _Period.all:
         return 'Tudo';
       case _Period.custom:
-        if (_customFrom != null && _customTo != null) {
-          return '${DateHelpers.full.format(_customFrom!)} a ${DateHelpers.full.format(_customTo!)}';
+        if (customFrom != null && customTo != null) {
+          return '${DateHelpers.full.format(customFrom)} a ${DateHelpers.full.format(customTo)}';
         }
         return 'Período personalizado';
     }
   }
 
   Future<void> _pickCustomRange() async {
-    final DateTime now = DateTime.now();
-    final DateTimeRange? picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      initialDateRange: (_customFrom != null && _customTo != null)
-          ? DateTimeRange(start: _customFrom!, end: _customTo!)
-          : DateTimeRange(
-              start: DateTime(now.year, now.month, 1),
-              end: DateTime(now.year, now.month, now.day),
-            ),
-    );
+    final DateTimeRange? picked = await _pickRange(_customFrom, _customTo);
     if (picked != null) {
       setState(() {
         _customFrom = picked.start;
@@ -98,6 +101,32 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _period = _Period.custom;
       });
     }
+  }
+
+  Future<void> _pickCatCustomRange() async {
+    final DateTimeRange? picked = await _pickRange(_catFrom, _catTo);
+    if (picked != null) {
+      setState(() {
+        _catFrom = picked.start;
+        _catTo = picked.end;
+        _catPeriod = _Period.custom;
+      });
+    }
+  }
+
+  Future<DateTimeRange?> _pickRange(DateTime? from, DateTime? to) {
+    final DateTime now = DateTime.now();
+    return showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDateRange: (from != null && to != null)
+          ? DateTimeRange(start: from, end: to)
+          : DateTimeRange(
+              start: DateTime(now.year, now.month, 1),
+              end: DateTime(now.year, now.month, now.day),
+            ),
+    );
   }
 
   @override
@@ -324,7 +353,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
             ),
           const SizedBox(height: 20),
-          _categoryReportSection(finance, theme, sym, from, to),
+          _categoryReportSection(finance, theme, sym),
           const SizedBox(height: 20),
           Text('Últimos 6 meses',
               style: theme.textTheme.titleMedium
@@ -356,8 +385,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  Widget _categoryReportSection(FinanceController finance, ThemeData theme,
-      String sym, DateTime from, DateTime to) {
+  Widget _categoryReportSection(
+      FinanceController finance, ThemeData theme, String sym) {
+    final (DateTime from, DateTime to) = _catRange();
     final List<_ReportGroup> groups = _reportGroups(finance, from, to);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,6 +406,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _Period.values.map((_Period p) {
+                    final bool selected = _catPeriod == p;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(_periodLabelFor(p)),
+                        selected: selected,
+                        onSelected: (_) {
+                          if (p == _Period.custom) {
+                            _pickCatCustomRange();
+                          } else {
+                            setState(() => _catPeriod = p);
+                          }
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(_catPeriodLabel(),
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.outline)),
+              const Divider(height: 20),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.checklist_rtl),
@@ -580,12 +637,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
         categoryIds: _selectedCategories.toList(),
         from: from,
         to: to,
-        periodLabel: _periodLabel(),
+        periodLabel: _catPeriodLabel(),
         symbol: sym,
       );
       await Share.shareXFiles(
         <XFile>[XFile(file.path, mimeType: 'application/pdf')],
-        subject: 'Relatório ZOOM - ${_periodLabel()}',
+        subject: 'Relatório ZOOM - ${_catPeriodLabel()}',
       );
     } catch (_) {
       if (mounted) {
