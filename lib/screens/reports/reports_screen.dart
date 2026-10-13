@@ -15,7 +15,9 @@ import '../../state/settings_controller.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/section_card.dart';
 
-enum _Period { month, last30, year, all }
+enum _Period { month, last30, year, all, custom }
+
+enum _PieMode { expense, income, both }
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -26,6 +28,12 @@ class ReportsScreen extends StatefulWidget {
 
 class _ReportsScreenState extends State<ReportsScreen> {
   _Period _period = _Period.month;
+  _PieMode _pieMode = _PieMode.expense;
+  DateTime? _customFrom;
+  DateTime? _customTo;
+
+  _PieMode get _nextPieMode =>
+      _PieMode.values[(_pieMode.index + 1) % _PieMode.values.length];
 
   (DateTime, DateTime) _range() {
     final DateTime now = DateTime.now();
@@ -42,6 +50,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return (DateTime(now.year), DateTime(now.year, 12, 31, 23, 59, 59));
       case _Period.all:
         return (DateTime(2000), DateTime(2100));
+      case _Period.custom:
+        final DateTime from =
+            _customFrom ?? DateHelpers.startOfMonth(now);
+        final DateTime to = _customTo ?? DateHelpers.endOfMonth(now);
+        return (from, DateTime(to.year, to.month, to.day, 23, 59, 59));
     }
   }
 
@@ -55,6 +68,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return 'Este ano';
       case _Period.all:
         return 'Tudo';
+      case _Period.custom:
+        if (_customFrom != null && _customTo != null) {
+          return '${DateHelpers.full.format(_customFrom!)} a ${DateHelpers.full.format(_customTo!)}';
+        }
+        return 'Período personalizado';
+    }
+  }
+
+  Future<void> _pickCustomRange() async {
+    final DateTime now = DateTime.now();
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDateRange: (_customFrom != null && _customTo != null)
+          ? DateTimeRange(start: _customFrom!, end: _customTo!)
+          : DateTimeRange(
+              start: DateTime(now.year, now.month, 1),
+              end: DateTime(now.year, now.month, now.day),
+            ),
+    );
+    if (picked != null) {
+      setState(() {
+        _customFrom = picked.start;
+        _customTo = picked.end;
+        _period = _Period.custom;
+      });
     }
   }
 
@@ -71,7 +111,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final double income = finance.sumFor(list, TransactionType.income);
     final double expense = finance.sumFor(list, TransactionType.expense);
     final double balance = income - expense;
-    final Map<String, double> byCategory = finance.expenseByCategory(from, to);
+
+    final TransactionType? pieType = switch (_pieMode) {
+      _PieMode.expense => TransactionType.expense,
+      _PieMode.income => TransactionType.income,
+      _PieMode.both => null,
+    };
+    final Map<String, double> byCategory =
+        finance.totalsByCategory(from, to, type: pieType);
+    final double pieTotal =
+        byCategory.values.fold(0.0, (double a, double b) => a + b);
+    final String pieTitle = switch (_pieMode) {
+      _PieMode.expense => 'Despesas por categoria',
+      _PieMode.income => 'Receitas por categoria',
+      _PieMode.both => 'Receitas e despesas por categoria',
+    };
 
     final List<MapEntry<String, double>> sortedCats =
         byCategory.entries.toList()
@@ -84,7 +138,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         IconButton(
           onPressed: list.isEmpty
               ? null
-              : () => _export(list, income, expense, byCategory, sym, finance),
+              : () => _export(list, income, expense,
+                  finance.expenseByCategory(from, to), sym, finance),
           icon: const Icon(Icons.ios_share),
           tooltip: 'Exportar',
         ),
@@ -102,7 +157,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   child: ChoiceChip(
                     label: Text(_periodLabelFor(p)),
                     selected: selected,
-                    onSelected: (_) => setState(() => _period = p),
+                    onSelected: (_) {
+                      if (p == _Period.custom) {
+                        _pickCustomRange();
+                      } else {
+                        setState(() => _period = p);
+                      }
+                    },
                   ),
                 );
               }).toList(),
@@ -114,7 +175,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Expanded(
                 child: StatCard(
                   label: 'Entradas',
-                  value: Money.compact(income, sym),
+                  value: Money.format(income, '', symbol: sym),
                   icon: Icons.arrow_upward,
                   color: const Color(0xFF06D6A0),
                   caption: _periodLabel(),
@@ -124,7 +185,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Expanded(
                 child: StatCard(
                   label: 'Saídas',
-                  value: Money.compact(expense, sym),
+                  value: Money.format(expense, '', symbol: sym),
                   icon: Icons.arrow_downward,
                   color: const Color(0xFFEF476F),
                   caption: _periodLabel(),
@@ -153,16 +214,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          Text('Despesas por categoria',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w700)),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(pieTitle,
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+              ),
+              const SizedBox(width: 8),
+              Text('toque para alternar',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.outline)),
+            ],
+          ),
           const SizedBox(height: 12),
           if (sortedCats.isEmpty)
             SectionCard(
               child: SizedBox(
                 height: 120,
                 child: Center(
-                  child: Text('Sem despesas no período',
+                  child: Text('Sem dados no período',
                       style: theme.textTheme.bodyMedium),
                 ),
               ),
@@ -174,29 +245,33 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 child: Row(
                   children: <Widget>[
                     Expanded(
-                      child: PieChart(
-                        PieChartData(
-                          sectionsSpace: 2,
-                          centerSpaceRadius: 42,
-                          sections: sortedCats.map((MapEntry<String, double> e) {
-                            final Category? c = finance.categoryById(e.key);
-                            final double pct = expense <= 0
-                                ? 0
-                                : (e.value / expense) * 100;
-                            return PieChartSectionData(
-                              value: e.value,
-                              color: c?.color ?? theme.colorScheme.primary,
-                              title: pct >= 8
-                                  ? '${pct.toStringAsFixed(0)}%'
-                                  : '',
-                              radius: 52,
-                              titleStyle: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
-                            );
-                          }).toList(),
+                      child: GestureDetector(
+                        onTap: () => setState(() => _pieMode = _nextPieMode),
+                        child: PieChart(
+                          PieChartData(
+                            sectionsSpace: 2,
+                            centerSpaceRadius: 42,
+                            sections:
+                                sortedCats.map((MapEntry<String, double> e) {
+                              final Category? c = finance.categoryById(e.key);
+                              final double pct = pieTotal <= 0
+                                  ? 0
+                                  : (e.value / pieTotal) * 100;
+                              return PieChartSectionData(
+                                value: e.value,
+                                color: c?.color ?? theme.colorScheme.primary,
+                                title: pct >= 8
+                                    ? '${pct.toStringAsFixed(0)}%'
+                                    : '',
+                                radius: 52,
+                                titleStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              );
+                            }).toList(),
+                          ),
                         ),
                       ),
                     ),
@@ -230,7 +305,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                     ),
                                   ),
                                   Text(
-                                    Money.compact(e.value, sym),
+                                    Money.format(e.value, '', symbol: sym),
                                     style: theme.textTheme.bodySmall
                                         ?.copyWith(
                                             fontWeight: FontWeight.w600),
@@ -272,6 +347,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return 'Ano';
       case _Period.all:
         return 'Tudo';
+      case _Period.custom:
+        return 'Período';
     }
   }
 

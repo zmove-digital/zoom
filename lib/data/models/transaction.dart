@@ -59,7 +59,7 @@ class Transaction {
     required this.date,
     this.description = '',
     this.notes = '',
-    this.isPaid = true,
+    this.isPaid,
     this.recurrenceId,
     this.recurrence,
     DateTime? createdAt,
@@ -72,12 +72,22 @@ class Transaction {
   DateTime date;
   String description;
   String notes;
-  bool isPaid;
+
+  /// `null` = automático (decide pela data); `true` = efetivado; `false` = pendente.
+  bool? isPaid;
   String? recurrenceId;
   RecurrencePeriod? recurrence;
   final DateTime createdAt;
 
   bool get isRecurring => recurrenceId != null && recurrence != null;
+
+  bool get isSettled {
+    if (isPaid != null) return isPaid!;
+    final DateTime now = DateTime.now();
+    final DateTime endOfToday =
+        DateTime(now.year, now.month, now.day, 23, 59, 59);
+    return !date.isAfter(endOfToday);
+  }
 
   double get signedAmount =>
       type == TransactionType.income ? amount : -amount;
@@ -128,7 +138,7 @@ class Transaction {
         date: DateTime.parse(json['date'] as String),
         description: json['description'] as String? ?? '',
         notes: json['notes'] as String? ?? '',
-        isPaid: json['isPaid'] as bool? ?? true,
+        isPaid: json['isPaid'] as bool?,
         recurrenceId: json['recurrenceId'] as String?,
         recurrence: recurrencePeriodFromName(json['recurrence'] as String?),
         createdAt: json['createdAt'] == null

@@ -372,16 +372,23 @@ class FinanceController extends ChangeNotifier {
     }
   }
 
-  Map<String, double> expenseByCategory(DateTime from, DateTime to) {
+  Map<String, double> totalsByCategory(
+    DateTime from,
+    DateTime to, {
+    TransactionType? type,
+  }) {
     final DateTime inclusive = DateTime(to.year, to.month, to.day, 23, 59, 59);
     final Map<String, double> map = <String, double>{};
     for (final Transaction t in transactions) {
-      if (t.type != TransactionType.expense) continue;
+      if (type != null && t.type != type) continue;
       if (t.date.isBefore(from) || t.date.isAfter(inclusive)) continue;
       map[t.categoryId] = (map[t.categoryId] ?? 0) + t.amount;
     }
     return map;
   }
+
+  Map<String, double> expenseByCategory(DateTime from, DateTime to) =>
+      totalsByCategory(from, to, type: TransactionType.expense);
 
   List<MapEntry<DateTime, double>> monthlySeries(int months, {TransactionType? type}) {
     final DateTime now = DateTime.now();

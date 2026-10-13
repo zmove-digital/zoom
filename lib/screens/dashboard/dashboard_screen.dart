@@ -99,6 +99,12 @@ class DashboardScreen extends StatelessWidget {
                     icon: Icons.arrow_upward_rounded,
                     color: const Color(0xFF06D6A0),
                     hidden: settings.settings.hideBalance,
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => const TransactionsScreen(
+                            initialType: TransactionType.income),
+                      ));
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -109,6 +115,12 @@ class DashboardScreen extends StatelessWidget {
                     icon: Icons.arrow_downward_rounded,
                     color: const Color(0xFFEF476F),
                     hidden: settings.settings.hideBalance,
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => const TransactionsScreen(
+                            initialType: TransactionType.expense),
+                      ));
+                    },
                   ),
                 ),
               ],
@@ -329,7 +341,7 @@ class DashboardScreen extends StatelessWidget {
                               style: theme.textTheme.bodyMedium),
                         ),
                         Text(
-                          '${Money.compact(spent, sym)} / ${Money.compact(b.limit, sym)}',
+                          '${Money.format(spent, '', symbol: sym)} / ${Money.format(b.limit, '', symbol: sym)}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: over
                                 ? theme.colorScheme.error
@@ -414,7 +426,7 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '${Money.compact(g.savedAmount, sym)} de ${Money.compact(g.targetAmount, sym)}',
+                        '${Money.format(g.savedAmount, '', symbol: sym)} de ${Money.format(g.targetAmount, '', symbol: sym)}',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],

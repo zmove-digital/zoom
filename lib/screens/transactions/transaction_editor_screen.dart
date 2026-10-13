@@ -31,6 +31,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
   late DateTime _date;
   String? _categoryId;
   RecurrencePeriod? _repeat;
+  bool? _paid;
 
   bool get _isEditing => widget.existing != null;
 
@@ -42,6 +43,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     _date = e?.date ?? DateTime.now();
     _categoryId = e?.categoryId;
     _repeat = e?.recurrence;
+    _paid = e?.isPaid;
     if (e != null) {
       _amount.text = e.amount.toStringAsFixed(2).replaceAll('.', ',');
       _description.text = e.description;
@@ -121,6 +123,65 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     );
   }
 
+  Widget _statusSelector(ThemeData theme) {
+    final bool income = _type == TransactionType.income;
+    final String doneLabel = income ? 'Recebido' : 'Pago';
+    final String pendingLabel = income ? 'A receber' : 'A pagar';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.check_circle_outline,
+                  size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 6),
+              Text(
+                'EFETIVAÇÃO',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            ChoiceChip(
+              label: const Text('Automático'),
+              selected: _paid == null,
+              onSelected: (_) => setState(() => _paid = null),
+            ),
+            ChoiceChip(
+              label: Text(doneLabel),
+              selected: _paid == true,
+              onSelected: (_) => setState(() => _paid = true),
+            ),
+            ChoiceChip(
+              label: Text(pendingLabel),
+              selected: _paid == false,
+              onSelected: (_) => setState(() => _paid = false),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            'Automático usa a data: passado conta como $doneLabel, futuro como $pendingLabel.',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.outline),
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _save() async {
     final FinanceController finance = context.read<FinanceController>();
     final SoundService sound = context.read<SoundService>();
@@ -150,6 +211,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
       date: _date,
       description: _description.text.trim(),
       notes: _notes.text.trim(),
+      isPaid: _paid,
       createdAt: widget.existing?.createdAt,
     );
 
@@ -310,6 +372,8 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: _pickDate,
           ),
+          const SizedBox(height: 16),
+          _statusSelector(theme),
           const SizedBox(height: 16),
           _repeatSelector(theme),
           const SizedBox(height: 16),

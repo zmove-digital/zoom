@@ -25,6 +25,7 @@ class TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool isIncome = transaction.type == TransactionType.income;
+    final bool settled = transaction.isSettled;
     final Color amountColor =
         isIncome ? const Color(0xFF06D6A0) : theme.colorScheme.error;
     final String title = transaction.description.trim().isEmpty
@@ -65,12 +66,47 @@ class TransactionTile extends StatelessWidget {
           ],
         ],
       ),
-      trailing: Text(
-        '${isIncome ? '+' : '-'} ${Money.format(transaction.amount.abs(), '', symbol: currencySymbol)}',
-        style: theme.textTheme.titleSmall?.copyWith(
-          color: amountColor,
-          fontWeight: FontWeight.w700,
-        ),
+      trailing: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
+          Text(
+            '${isIncome ? '+' : '-'} ${Money.format(transaction.amount.abs(), '', symbol: currencySymbol)}',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: amountColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                settled
+                    ? Icons.check_circle
+                    : Icons.schedule,
+                size: 13,
+                color: settled
+                    ? const Color(0xFF06D6A0)
+                    : const Color(0xFFF4A261),
+              ),
+              const SizedBox(width: 3),
+              Text(
+                settled
+                    ? 'Efetivado'
+                    : (isIncome ? 'A receber' : 'A pagar'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 11,
+                  color: settled
+                      ? const Color(0xFF06D6A0)
+                      : const Color(0xFFF4A261),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

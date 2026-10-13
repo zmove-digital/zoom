@@ -76,7 +76,7 @@ class GoalsScreen extends StatelessWidget {
                                         ?.copyWith(
                                             fontWeight: FontWeight.w700)),
                                 Text(
-                                  '${Money.compact(g.savedAmount, sym)} de ${Money.compact(g.targetAmount, sym)}',
+                                  '${Money.format(g.savedAmount, '', symbol: sym)} de ${Money.format(g.targetAmount, '', symbol: sym)}',
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
                               ],

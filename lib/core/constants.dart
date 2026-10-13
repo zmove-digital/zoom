@@ -67,6 +67,12 @@ const List<int> kCategoryIconChoices = <int>[
   0xe4bd,
   0xe7e9,
   0xe88a,
+  0xe37c,
+  0xf05a2,
+  0xe6e7,
+  0xe5c6,
+  0xe13d,
+  0xe2f2,
 ];
 
 const Map<int, IconData> kIconsByCodePoint = <int, IconData>{
@@ -88,6 +94,12 @@ const Map<int, IconData> kIconsByCodePoint = <int, IconData>{
   0xe4bd: IconData(0xe4bd, fontFamily: 'MaterialIcons'),
   0xe7e9: IconData(0xe7e9, fontFamily: 'MaterialIcons'),
   0xe88a: IconData(0xe88a, fontFamily: 'MaterialIcons'),
+  0xe37c: IconData(0xe37c, fontFamily: 'MaterialIcons'),
+  0xf05a2: IconData(0xf05a2, fontFamily: 'MaterialIcons'),
+  0xe6e7: IconData(0xe6e7, fontFamily: 'MaterialIcons'),
+  0xe5c6: IconData(0xe5c6, fontFamily: 'MaterialIcons'),
+  0xe13d: IconData(0xe13d, fontFamily: 'MaterialIcons'),
+  0xe2f2: IconData(0xe2f2, fontFamily: 'MaterialIcons'),
   0xe263: IconData(0xe263, fontFamily: 'MaterialIcons'),
   0xe53d: IconData(0xe53d, fontFamily: 'MaterialIcons'),
   0xe530: IconData(0xe530, fontFamily: 'MaterialIcons'),

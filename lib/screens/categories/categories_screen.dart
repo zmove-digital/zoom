@@ -259,6 +259,12 @@ class _CategoryEditorState extends State<_CategoryEditor> {
             ),
             const SizedBox(height: 18),
             Text('Cor', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(
+              'A cor escolhida define a fatia desta categoria no gráfico de pizza em Relatórios.',
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.outline),
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 10,

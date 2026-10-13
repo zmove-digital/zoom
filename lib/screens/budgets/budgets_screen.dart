@@ -121,8 +121,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    Text('Gasto: ${Money.compact(totalSpent, sym)}'),
-                    Text('Limite: ${Money.compact(totalLimit, sym)}'),
+                    Text('Gasto: ${Money.format(totalSpent, '', symbol: sym)}'),
+                    Text('Limite: ${Money.format(totalLimit, '', symbol: sym)}'),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -164,7 +164,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
                         Text(
                           limit <= 0
                               ? 'Definir limite'
-                              : '${Money.compact(spent, sym)} / ${Money.compact(limit, sym)}',
+                              : '${Money.format(spent, '', symbol: sym)} / ${Money.format(limit, '', symbol: sym)}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: over
                                 ? theme.colorScheme.error

@@ -14,9 +14,10 @@ import '../../widgets/transaction_tile.dart';
 import 'transaction_editor_screen.dart';
 
 class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({this.embedded = false, super.key});
+  const TransactionsScreen({this.embedded = false, this.initialType, super.key});
 
   final bool embedded;
+  final TransactionType? initialType;
 
   @override
   State<TransactionsScreen> createState() => _TransactionsScreenState();
@@ -32,6 +33,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   void initState() {
     super.initState();
     _month = DateHelpers.startOfMonth(DateTime.now());
+    _typeFilter = widget.initialType;
   }
 
   @override
@@ -69,93 +71,98 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     return AppScaffold(
       title: 'Extrato',
-      body: Column(
-        children: <Widget>[
-          Padding(
+      body: CustomScrollView(
+        slivers: <Widget>[
+          SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Column(
-              children: <Widget>[
-                _monthSelector(theme, sym, income, expense),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _search,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'Buscar por descrição...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _search.text.isEmpty
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _search.clear();
-                              setState(() {});
-                            },
-                          ),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: <Widget>[
+                  _monthSelector(theme, sym, income, expense),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _search,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar por descrição...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _search.text.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _search.clear();
+                                setState(() {});
+                              },
+                            ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: <Widget>[
-                      FilterChip(
-                        label: const Text('Tudo'),
-                        selected: _typeFilter == null,
-                        onSelected: (_) => setState(() => _typeFilter = null),
-                      ),
-                      const SizedBox(width: 8),
-                      FilterChip(
-                        label: const Text('Receitas'),
-                        selected: _typeFilter == TransactionType.income,
-                        onSelected: (_) => setState(
-                            () => _typeFilter = TransactionType.income),
-                      ),
-                      const SizedBox(width: 8),
-                      FilterChip(
-                        label: const Text('Despesas'),
-                        selected: _typeFilter == TransactionType.expense,
-                        onSelected: (_) => setState(
-                            () => _typeFilter = TransactionType.expense),
-                      ),
-                      const SizedBox(width: 16),
-                      _categoryDropdown(finance, theme),
-                    ],
+                  const SizedBox(height: 10),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: <Widget>[
+                        FilterChip(
+                          label: const Text('Tudo'),
+                          selected: _typeFilter == null,
+                          onSelected: (_) =>
+                              setState(() => _typeFilter = null),
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Receitas'),
+                          selected: _typeFilter == TransactionType.income,
+                          onSelected: (_) => setState(
+                              () => _typeFilter = TransactionType.income),
+                        ),
+                        const SizedBox(width: 8),
+                        FilterChip(
+                          label: const Text('Despesas'),
+                          selected: _typeFilter == TransactionType.expense,
+                          onSelected: (_) => setState(
+                              () => _typeFilter = TransactionType.expense),
+                        ),
+                        const SizedBox(width: 16),
+                        _categoryDropdown(finance, theme),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: list.isEmpty
-                ? const EmptyState(
-                    icon: Icons.search_off_rounded,
-                    title: 'Nada por aqui',
-                    message: 'Nenhum lançamento encontrado com esses filtros.',
-                  )
-                : ListView.separated(
-                    padding: EdgeInsets.fromLTRB(
-                        8, 0, 8, widget.embedded ? 100 : 24),
-                    itemCount: list.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (BuildContext context, int index) {
-                      final Transaction t = list[index];
-                      return TransactionTile(
-                        transaction: t,
-                        category: finance.categoryById(t.categoryId),
-                        currencySymbol: sym,
-                        onTap: () {
-                          Navigator.of(context).push(MaterialPageRoute<void>(
-                            builder: (_) =>
-                                TransactionEditorScreen(existing: t),
-                          ));
-                        },
-                        onLongPress: () => _confirmDelete(t),
-                      );
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
+          if (list.isEmpty)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: EmptyState(
+                icon: Icons.search_off_rounded,
+                title: 'Nada por aqui',
+                message: 'Nenhum lançamento encontrado com esses filtros.',
+              ),
+            )
+          else
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(8, 0, 8, widget.embedded ? 100 : 24),
+              sliver: SliverList.separated(
+                itemCount: list.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (BuildContext context, int index) {
+                  final Transaction t = list[index];
+                  return TransactionTile(
+                    transaction: t,
+                    category: finance.categoryById(t.categoryId),
+                    currencySymbol: sym,
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => TransactionEditorScreen(existing: t),
+                      ));
                     },
-                  ),
-          ),
+                    onLongPress: () => _confirmDelete(t),
+                  );
+                },
+              ),
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -188,21 +195,24 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      '+ ${Money.compact(income, sym)}',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: const Color(0xFF06D6A0)),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '- ${Money.compact(expense, sym)}',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: const Color(0xFFEF476F)),
-                    ),
-                  ],
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        '+ ${Money.format(income, '', symbol: sym)}',
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: const Color(0xFF06D6A0)),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '- ${Money.format(expense, '', symbol: sym)}',
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: const Color(0xFFEF476F)),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
