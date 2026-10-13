@@ -49,5 +49,7 @@
 	<string>O ZOOM usa a câmera para você fotografar e usar a imagem como fundo do app.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>O ZOOM acessa suas fotos para você escolher uma imagem de fundo do app.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>O ZOOM usa o Face ID para desbloquear o app quando o PIN é esquecido.</string>
 </dict>
 </plist>

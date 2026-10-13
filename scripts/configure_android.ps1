@@ -1,9 +1,11 @@
 #requires -Version 5.1
 <#
     Ajusta o projeto Android gerado pelo Flutter para suportar
-    flutter_local_notifications:
+    flutter_local_notifications e local_auth (biometria):
       - desugaring (core library desugaring)
-      - permissoes de notificacao / alarme / boot no AndroidManifest.xml
+      - permissoes de notificacao / alarme / boot / biometria no AndroidManifest.xml
+      - MainActivity herdando de FlutterFragmentActivity (local_auth)
+      - LaunchTheme com parent AppCompat (local_auth, evita crash no Android 8-)
 
     Suporta tanto o Gradle Groovy (build.gradle) quanto o Kotlin DSL
     (build.gradle.kts). E idempotente: pode rodar varias vezes sem duplicar.
@@ -105,7 +107,8 @@ function Configure-Manifest([string]$Path) {
     $permissions = @(
         'android.permission.POST_NOTIFICATIONS',
         'android.permission.SCHEDULE_EXACT_ALARM',
-        'android.permission.RECEIVE_BOOT_COMPLETED'
+        'android.permission.RECEIVE_BOOT_COMPLETED',
+        'android.permission.USE_BIOMETRIC'
     )
     $missing = @()
     foreach ($p in $permissions) {
@@ -164,9 +167,54 @@ function Configure-Manifest([string]$Path) {
     }
 }
 
+function Configure-MainActivity([string]$MainRoot) {
+    $kotlinDir = Join-Path $MainRoot 'kotlin'
+    if (-not (Test-Path -LiteralPath $kotlinDir)) {
+        Write-Host "  AVISO: pasta 'kotlin' nao encontrada em $MainRoot" -ForegroundColor Yellow
+        return
+    }
+    $activity = Get-ChildItem -LiteralPath $kotlinDir -Recurse -Filter 'MainActivity.kt' |
+        Select-Object -First 1
+    if (-not $activity) {
+        Write-Host "  AVISO: MainActivity.kt nao encontrado em $kotlinDir" -ForegroundColor Yellow
+        return
+    }
+    $text = Get-Text $activity.FullName
+    if ($text -match 'FlutterFragmentActivity') {
+        Write-Host "  ja configurado (MainActivity): $($activity.Name)" -ForegroundColor DarkGray
+        return
+    }
+    $text = $text -replace 'io\.flutter\.embedding\.android\.FlutterActivity', 'io.flutter.embedding.android.FlutterFragmentActivity'
+    $text = $text -replace 'FlutterActivity\(\)', 'FlutterFragmentActivity()'
+    Set-Text $activity.FullName $text
+    Write-Host "  atualizado (MainActivity -> FlutterFragmentActivity): $($activity.FullName)" -ForegroundColor Green
+}
+
+function Configure-LaunchTheme([string]$ResDir) {
+    foreach ($variant in @('values', 'values-night')) {
+        $path = Join-Path $ResDir "$variant\styles.xml"
+        if (-not (Test-Path -LiteralPath $path)) { continue }
+        $text = Get-Text $path
+        if ($text -match 'Theme\.AppCompat') {
+            Write-Host "  ja configurado (LaunchTheme): $path" -ForegroundColor DarkGray
+            continue
+        }
+        $re = [regex]'(<style\s+name="LaunchTheme"\s+parent=")[^"]*(")'
+        if ($re.IsMatch($text)) {
+            $text = $re.Replace($text, '${1}Theme.AppCompat.DayNight.NoActionBar${2}', 1)
+            Set-Text $path $text
+            Write-Host "  atualizado (LaunchTheme): $path" -ForegroundColor Green
+        } else {
+            Write-Host "  AVISO: LaunchTheme nao encontrado em $path" -ForegroundColor Yellow
+        }
+    }
+}
+
 $buildGradleKts = Join-Path $AppDir 'build.gradle.kts'
 $buildGradleGroovy = Join-Path $AppDir 'build.gradle'
 $manifest = Join-Path $AppDir 'src\main\AndroidManifest.xml'
+$mainRoot = Join-Path $AppDir 'src\main'
+$resDir = Join-Path $mainRoot 'res'
 
 Write-Host "Configurando projeto Android..." -ForegroundColor Cyan
 
@@ -182,6 +230,18 @@ if (Test-Path -LiteralPath $manifest) {
     Configure-Manifest -Path $manifest
 } else {
     Write-Host "  AVISO: AndroidManifest.xml nao encontrado em $AppDir" -ForegroundColor Yellow
+}
+
+if (Test-Path -LiteralPath $mainRoot) {
+    Configure-MainActivity -MainRoot $mainRoot
+} else {
+    Write-Host "  AVISO: pasta src\main nao encontrada em $AppDir" -ForegroundColor Yellow
+}
+
+if (Test-Path -LiteralPath $resDir) {
+    Configure-LaunchTheme -ResDir $resDir
+} else {
+    Write-Host "  AVISO: pasta res nao encontrada em $mainRoot" -ForegroundColor Yellow
 }
 
 Write-Host "Configuracao Android concluida." -ForegroundColor Green

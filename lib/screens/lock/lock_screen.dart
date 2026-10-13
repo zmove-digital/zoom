@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants.dart';
@@ -16,7 +17,10 @@ class LockScreen extends StatefulWidget {
 
 class _LockScreenState extends State<LockScreen> {
   final TextEditingController _controller = TextEditingController();
+  final LocalAuthentication _auth = LocalAuthentication();
   bool _error = false;
+  bool _deviceAuthAvailable = false;
+  bool _authenticating = false;
   Timer? _ticker;
 
   @override
@@ -25,6 +29,17 @@ class _LockScreenState extends State<LockScreen> {
     if (context.read<SettingsController>().pinLocked) {
       _startTicker();
     }
+    _checkDeviceAuth();
+  }
+
+  Future<void> _checkDeviceAuth() async {
+    bool available = false;
+    try {
+      available = await _auth.isDeviceSupported();
+    } on LocalAuthException {
+      available = false;
+    }
+    if (mounted) setState(() => _deviceAuthAvailable = available);
   }
 
   @override
@@ -67,6 +82,36 @@ class _LockScreenState extends State<LockScreen> {
       if (settings.pinLocked) {
         _startTicker();
       }
+    }
+  }
+
+  Future<void> _unlockWithDevice() async {
+    if (_authenticating) return;
+    final SettingsController settings = context.read<SettingsController>();
+    _authenticating = true;
+    bool ok = false;
+    try {
+      ok = await _auth.authenticate(
+        localizedReason: 'Desbloqueie o ${AppInfo.appName}',
+        biometricOnly: false,
+        persistAcrossBackgrounding: true,
+      );
+    } on LocalAuthException {
+      ok = false;
+    } finally {
+      _authenticating = false;
+    }
+    if (!mounted) return;
+    if (ok) {
+      settings.clearPinAttempts();
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => const AppShell()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Não foi possível desbloquear com o aparelho')),
+      );
     }
   }
 
@@ -144,6 +189,17 @@ class _LockScreenState extends State<LockScreen> {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 8),
+                  if (_deviceAuthAvailable)
+                    TextButton.icon(
+                      onPressed: _unlockWithDevice,
+                      icon: Icon(Icons.fingerprint,
+                          color: theme.colorScheme.onPrimary),
+                      label: Text(
+                        'Usar biometria ou senha do aparelho',
+                        style: TextStyle(color: theme.colorScheme.onPrimary),
+                      ),
+                    ),
                 ],
               ),
             ),

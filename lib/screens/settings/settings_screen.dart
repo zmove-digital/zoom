@@ -640,24 +640,8 @@ class _PrivacySection extends StatelessWidget {
                     settings.setPin(enabled: false, pin: '');
                     return;
                   }
-                  final TextEditingController c = TextEditingController();
-                  final String? pin = await _textDialog(
-                    context,
-                    'Defina um PIN (4 dígitos)',
-                    c,
-                    keyboard: TextInputType.number,
-                    maxLength: SecurityRules.pinLength,
-                  );
-                  if (pin != null && RegExp(r'^\d{4}$').hasMatch(pin)) {
-                    settings.setPin(enabled: true, pin: pin);
-                  } else if (pin != null && pin.isNotEmpty) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('O PIN deve ter exatamente 4 dígitos')),
-                      );
-                    }
-                  }
+                  final String? pin = await _setPinDialog(context);
+                  if (pin != null) settings.setPin(enabled: true, pin: pin);
                 },
               ),
             ],
@@ -727,6 +711,70 @@ Future<String?> _textDialog(
           child: const Text('Salvar'),
         ),
       ],
+    ),
+  );
+}
+
+Future<String?> _setPinDialog(BuildContext context) {
+  final TextEditingController pin = TextEditingController();
+  final TextEditingController confirm = TextEditingController();
+  String? error;
+  return showDialog<String>(
+    context: context,
+    builder: (BuildContext context) => StatefulBuilder(
+      builder: (BuildContext context, StateSetter setState) => AlertDialog(
+        title: const Text('Defina um PIN'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            TextField(
+              controller: pin,
+              autofocus: true,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              maxLength: SecurityRules.pinLength,
+              decoration: const InputDecoration(labelText: 'PIN (4 dígitos)'),
+            ),
+            TextField(
+              controller: confirm,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              maxLength: SecurityRules.pinLength,
+              decoration: const InputDecoration(labelText: 'Confirme o PIN'),
+            ),
+            if (error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () {
+              final String a = pin.text.trim();
+              final String b = confirm.text.trim();
+              if (!RegExp(r'^\d{4}$').hasMatch(a)) {
+                setState(() => error = 'Use exatamente 4 dígitos');
+                return;
+              }
+              if (a != b) {
+                setState(() => error = 'Os PINs não coincidem');
+                return;
+              }
+              Navigator.pop(context, a);
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
     ),
   );
 }
