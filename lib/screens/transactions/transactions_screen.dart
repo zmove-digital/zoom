@@ -69,6 +69,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final double income = finance.sumFor(list, TransactionType.income);
     final double expense = finance.sumFor(list, TransactionType.expense);
 
+    double settledBalance = 0;
+    for (final Transaction t in list) {
+      if (t.isSettled) settledBalance += t.signedAmount;
+    }
+
     return AppScaffold(
       title: 'Extrato',
       body: CustomScrollView(
@@ -78,7 +83,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             sliver: SliverToBoxAdapter(
               child: Column(
                 children: <Widget>[
-                  _monthSelector(theme, sym, income, expense),
+                  _monthSelector(theme, sym, income, expense, settledBalance),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _search,
@@ -177,8 +182,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  Widget _monthSelector(
-      ThemeData theme, String sym, double income, double expense) {
+  Widget _monthSelector(ThemeData theme, String sym, double income,
+      double expense, double settledBalance) {
     return SectionCard(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
@@ -213,6 +218,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                             ?.copyWith(color: const Color(0xFFEF476F)),
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Efetivadas saldo atual: ${Money.format(settledBalance, '', symbol: sym)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
