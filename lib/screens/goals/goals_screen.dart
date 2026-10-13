@@ -147,9 +147,16 @@ class GoalsScreen extends StatelessWidget {
       );
       return;
     }
-    final (double, String)? result = await showDialog<(double, String)>(
+    final (double, String)? result =
+        await showModalBottomSheet<(double, String)>(
       context: context,
-      builder: (BuildContext ctx) => _ContributeDialog(
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) => _ContributeSheet(
         goal: goal,
         accounts: accounts,
         sym: sym,
@@ -174,8 +181,8 @@ class GoalsScreen extends StatelessWidget {
   }
 }
 
-class _ContributeDialog extends StatefulWidget {
-  const _ContributeDialog({
+class _ContributeSheet extends StatefulWidget {
+  const _ContributeSheet({
     required this.goal,
     required this.accounts,
     required this.sym,
@@ -186,10 +193,10 @@ class _ContributeDialog extends StatefulWidget {
   final String sym;
 
   @override
-  State<_ContributeDialog> createState() => _ContributeDialogState();
+  State<_ContributeSheet> createState() => _ContributeSheetState();
 }
 
-class _ContributeDialogState extends State<_ContributeDialog> {
+class _ContributeSheetState extends State<_ContributeSheet> {
   final TextEditingController _amount = TextEditingController();
   final FocusNode _amountFocus = FocusNode();
   late String _accountId = widget.accounts.first.id;
@@ -210,64 +217,98 @@ class _ContributeDialogState extends State<_ContributeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Guardar em "${widget.goal.name}"'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          TextField(
-            controller: _amount,
-            focusNode: _amountFocus,
-            autofocus: true,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-                labelText: 'Valor', prefixText: '${widget.sym} '),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: _accountId,
-            decoration: const InputDecoration(
-              labelText: 'Conta de origem',
-              prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-            ),
-            items: widget.accounts
-                .map(
-                  (Account a) => DropdownMenuItem<String>(
-                    value: a.id,
-                    child: Row(
-                      children: <Widget>[
-                        Icon(a.icon, size: 18, color: a.color),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child:
-                              Text(a.name, overflow: TextOverflow.ellipsis),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-            onChanged: (String? v) {
-              if (v != null) {
-                setState(() => _accountId = v);
-                _amountFocus.requestFocus();
-              }
-            },
-          ),
-        ],
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Guardar em "${widget.goal.name}"',
+              style: theme.textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _amount,
+              focusNode: _amountFocus,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: 'Valor',
+                prefixText: '${widget.sym} ',
+              ),
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<String>(
+              initialValue: _accountId,
+              decoration: const InputDecoration(
+                labelText: 'Conta de origem',
+                prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+              ),
+              items: widget.accounts
+                  .map(
+                    (Account a) => DropdownMenuItem<String>(
+                      value: a.id,
+                      child: Row(
+                        children: <Widget>[
+                          Icon(a.icon, size: 18, color: a.color),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(a.name,
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (String? v) {
+                if (v != null) setState(() => _accountId = v);
+              },
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancelar'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(
+                      (Money.parse(_amount.text), _accountId),
+                    ),
+                    child: const Text('Guardar'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
-        FilledButton(
-          onPressed: () =>
-              Navigator.pop(context, (Money.parse(_amount.text), _accountId)),
-          child: const Text('Guardar'),
-        ),
-      ],
+      ),
     );
   }
 }
