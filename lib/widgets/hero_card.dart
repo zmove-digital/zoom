@@ -6,21 +6,23 @@ import '../core/utils/formatters.dart';
 class HeroCard extends StatelessWidget {
   const HeroCard({
     required this.balance,
-    required this.income,
-    required this.expense,
     required this.currencySymbol,
+    required this.hidden,
+    required this.onToggleHidden,
     super.key,
   });
 
   final double balance;
-  final double income;
-  final double expense;
   final String currencySymbol;
+  final bool hidden;
+  final VoidCallback onToggleHidden;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     const Color onHero = Color(0xFFFFFFFF);
+    final String masked =
+        currencySymbol.isEmpty ? '••••••' : '$currencySymbol ••••••';
 
     return Container(
       decoration: BoxDecoration(
@@ -66,38 +68,35 @@ class HeroCard extends StatelessWidget {
                         style: theme.textTheme.bodyMedium
                             ?.copyWith(color: onHero),
                       ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: onToggleHidden,
+                        tooltip: hidden ? 'Mostrar saldo' : 'Ocultar saldo',
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 22,
+                        icon: Icon(
+                          hidden
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: onHero,
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      Money.format(balance, '', symbol: currencySymbol),
+                      hidden
+                          ? masked
+                          : Money.format(balance, '', symbol: currencySymbol),
                       maxLines: 1,
                       style: theme.textTheme.displaySmall?.copyWith(
                         color: onHero,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: <Widget>[
-                      _miniStat(
-                        theme,
-                        'Entradas',
-                        Money.compact(income, currencySymbol),
-                        Icons.south_west_rounded,
-                      ),
-                      const SizedBox(width: 20),
-                      _miniStat(
-                        theme,
-                        'Saídas',
-                        Money.compact(expense, currencySymbol),
-                        Icons.north_east_rounded,
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -146,33 +145,6 @@ class HeroCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _miniStat(ThemeData theme, String label, String value, IconData icon) {
-    const Color onHero = Color(0xFFFFFFFF);
-    return Row(
-      children: <Widget>[
-        Icon(icon, size: 16, color: onHero),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              label,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: onHero.withValues(alpha: 0.85)),
-            ),
-            Text(
-              value,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: onHero,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

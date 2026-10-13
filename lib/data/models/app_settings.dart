@@ -32,6 +32,7 @@ class AppSettings {
     this.lastBackupAt,
     this.pinEnabled = false,
     this.pin = '',
+    this.hideBalance = false,
   });
 
   bool onboardingDone;
@@ -57,6 +58,7 @@ class AppSettings {
   DateTime? lastBackupAt;
   bool pinEnabled;
   String pin;
+  bool hideBalance;
 
   AppSettings copyWith({
     bool? onboardingDone,
@@ -82,6 +84,7 @@ class AppSettings {
     Object? lastBackupAt = _unset,
     bool? pinEnabled,
     String? pin,
+    bool? hideBalance,
   }) {
     return AppSettings(
       onboardingDone: onboardingDone ?? this.onboardingDone,
@@ -114,6 +117,7 @@ class AppSettings {
           lastBackupAt == _unset ? this.lastBackupAt : lastBackupAt as DateTime?,
       pinEnabled: pinEnabled ?? this.pinEnabled,
       pin: pin ?? this.pin,
+      hideBalance: hideBalance ?? this.hideBalance,
     );
   }
 
@@ -141,6 +145,7 @@ class AppSettings {
         'lastBackupAt': lastBackupAt?.toIso8601String(),
         'pinEnabled': pinEnabled,
         'pin': pin,
+        'hideBalance': hideBalance,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -170,6 +175,7 @@ class AppSettings {
             : DateTime.parse(json['lastBackupAt'] as String),
         pinEnabled: json['pinEnabled'] as bool? ?? false,
         pin: json['pin'] as String? ?? '',
+        hideBalance: json['hideBalance'] as bool? ?? false,
       );
 }
 

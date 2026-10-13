@@ -40,7 +40,11 @@ class AppScaffold extends StatelessWidget {
               actions: actions,
             ),
       body: GradientBackground(
-        child: Padding(padding: padding, child: body),
+        child: SafeArea(
+          top: title == null && actions == null,
+          bottom: false,
+          child: Padding(padding: padding, child: body),
+        ),
       ),
       floatingActionButton: floatingActionButton,
       bottomNavigationBar: bottomNavigationBar,

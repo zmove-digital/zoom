@@ -51,7 +51,7 @@ class DashboardScreen extends StatelessWidget {
       body: RefreshIndicator(
         onRefresh: () async {},
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
           children: <Widget>[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -80,9 +80,10 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 20),
             HeroCard(
               balance: balance,
-              income: income,
-              expense: expense,
               currencySymbol: sym,
+              hidden: settings.settings.hideBalance,
+              onToggleHidden: () => settings
+                  .setHideBalance(!settings.settings.hideBalance),
             ),
             const SizedBox(height: 16),
             _primaryAction(context),

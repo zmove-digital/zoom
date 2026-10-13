@@ -111,6 +111,9 @@ class SettingsController extends ChangeNotifier {
   void setUserName(String name) =>
       update((AppSettings s) => s.copyWith(userName: name.trim()));
 
+  void setHideBalance(bool value) =>
+      update((AppSettings s) => s.copyWith(hideBalance: value));
+
   void reload() {
     final Map<String, dynamic> stored = _db.mapOf(DbKeys.settings);
     settings = stored.isEmpty ? AppSettings() : AppSettings.fromJson(stored);
