@@ -92,8 +92,12 @@ class FinanceController extends ChangeNotifier {
   }
 
   double get totalBalance {
+    final DateTime now = DateTime.now();
+    final DateTime endOfToday =
+        DateTime(now.year, now.month, now.day, 23, 59, 59);
     double total = 0;
     for (final Transaction t in transactions) {
+      if (t.date.isAfter(endOfToday)) continue;
       total += t.signedAmount;
     }
     return total;
