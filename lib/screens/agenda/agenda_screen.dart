@@ -9,6 +9,7 @@ import '../../state/agenda_controller.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/empty_state.dart';
 import 'agenda_editor_screen.dart';
+import 'diary_report_screen.dart';
 
 class AgendaScreen extends StatefulWidget {
   const AgendaScreen({super.key});
@@ -41,6 +42,21 @@ class _AgendaScreenState extends State<AgendaScreen> {
     }
   }
 
+  Widget _ratingStars(int rating) {
+    final Color empty = Theme.of(context).colorScheme.outlineVariant;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List<Widget>.generate(
+        5,
+        (int i) => Icon(
+          i < rating ? Icons.star_rounded : Icons.star_border_rounded,
+          size: 14,
+          color: i < rating ? const Color(0xFFFFB703) : empty,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AgendaController agenda = context.watch<AgendaController>();
@@ -49,6 +65,16 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     return AppScaffold(
       title: 'Diário',
+      actions: <Widget>[
+        IconButton(
+          onPressed: () {
+            Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const DiaryReportScreen()));
+          },
+          icon: const Icon(Icons.star_half_rounded),
+          tooltip: 'Relatório do diário',
+        ),
+      ],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.of(context).push(MaterialPageRoute<void>(
@@ -153,6 +179,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                       style: theme.textTheme.labelMedium,
                                     ),
                                     const Spacer(),
+                                    if (e.rating > 0) ...<Widget>[
+                                      _ratingStars(e.rating),
+                                      const SizedBox(width: 8),
+                                    ],
                                     Icon(_moodIcon(e.mood),
                                         size: 18,
                                         color: theme.colorScheme.outline),

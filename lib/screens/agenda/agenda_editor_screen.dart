@@ -25,6 +25,7 @@ class _AgendaEditorScreenState extends State<AgendaEditorScreen> {
   late Mood _mood;
   late String _colorHex;
   late List<String> _tags;
+  late int _rating;
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _AgendaEditorScreenState extends State<AgendaEditorScreen> {
     _mood = e?.mood ?? Mood.neutral;
     _colorHex = e?.colorHex ?? kPaletteHex.first;
     _tags = List<String>.from(e?.tags ?? <String>[]);
+    _rating = e?.rating ?? 0;
   }
 
   @override
@@ -113,7 +115,8 @@ class _AgendaEditorScreenState extends State<AgendaEditorScreen> {
         ..content = _content.text
         ..mood = _mood
         ..colorHex = _colorHex
-        ..tags = _tags;
+        ..tags = _tags
+        ..rating = _rating;
       controller.add(entry);
     } else {
       controller.update(
@@ -124,6 +127,7 @@ class _AgendaEditorScreenState extends State<AgendaEditorScreen> {
           mood: _mood,
           colorHex: _colorHex,
           tags: _tags,
+          rating: _rating,
         ),
       );
     }
@@ -185,6 +189,36 @@ class _AgendaEditorScreenState extends State<AgendaEditorScreen> {
           const SizedBox(height: 6),
           Text('Humor: ${_moodLabel(_mood)}',
               style: theme.textTheme.bodySmall),
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              Text('Nota do dia', style: theme.textTheme.titleSmall),
+              const SizedBox(width: 12),
+              ...List<Widget>.generate(5, (int i) {
+                final int star = i + 1;
+                final bool filled = _rating >= star;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: GestureDetector(
+                    onTap: () => setState(
+                        () => _rating = _rating == star ? 0 : star),
+                    child: Icon(
+                      filled ? Icons.star_rounded : Icons.star_border_rounded,
+                      size: 32,
+                      color: filled
+                          ? const Color(0xFFFFB703)
+                          : theme.colorScheme.outline,
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(width: 6),
+              Text(
+                _rating == 0 ? 'sem nota' : '$_rating/5',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           TextField(
             controller: _title,

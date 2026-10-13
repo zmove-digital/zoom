@@ -34,6 +34,7 @@ class StatCard extends StatelessWidget {
     required this.icon,
     required this.color,
     this.caption,
+    this.onTap,
     super.key,
   });
 
@@ -42,12 +43,14 @@ class StatCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String? caption;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return SectionCard(
       padding: const EdgeInsets.all(14),
+      onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[

@@ -54,7 +54,7 @@ class HeroCard extends StatelessWidget {
               color: const Color(0xFF22D3EE),
             ),
             Padding(
-              padding: const EdgeInsets.all(22),
+              padding: const EdgeInsets.fromLTRB(22, 18, 12, 22),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
@@ -73,7 +73,7 @@ class HeroCard extends StatelessWidget {
                         onPressed: onToggleHidden,
                         tooltip: hidden ? 'Mostrar saldo' : 'Ocultar saldo',
                         visualDensity: VisualDensity.compact,
-                        iconSize: 22,
+                        iconSize: 24,
                         icon: Icon(
                           hidden
                               ? Icons.visibility_off_outlined
@@ -83,20 +83,37 @@ class HeroCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      hidden
-                          ? masked
-                          : Money.format(balance, '', symbol: currencySymbol),
-                      maxLines: 1,
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        color: onHero,
-                        fontWeight: FontWeight.w800,
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        hidden
+                            ? masked
+                            : Money.format(balance, '', symbol: currencySymbol),
+                        maxLines: 1,
+                        style: theme.textTheme.displayMedium?.copyWith(
+                          color: onHero,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -1,
+                        ),
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: <Widget>[
+                      Icon(Icons.verified_rounded,
+                          size: 14, color: onHero.withValues(alpha: 0.8)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Atualizado em ${_monthLabel()}',
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: onHero.withValues(alpha: 0.85)),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -105,6 +122,12 @@ class HeroCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _monthLabel() {
+    final String raw = DateHelpers.monthYear.format(DateTime.now());
+    if (raw.isEmpty) return raw;
+    return raw[0].toUpperCase() + raw.substring(1);
   }
 
   Widget _shineBand() {

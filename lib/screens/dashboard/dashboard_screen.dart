@@ -9,6 +9,7 @@ import '../../data/models/goal.dart';
 import '../../data/models/transaction.dart';
 import '../../state/agenda_controller.dart';
 import '../../state/finance_controller.dart';
+import '../../state/reminder_controller.dart';
 import '../../state/settings_controller.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/category_avatar.dart';
@@ -23,6 +24,7 @@ import '../reminders/reminders_screen.dart';
 import '../transactions/transaction_editor_screen.dart';
 import '../transactions/transactions_screen.dart';
 import '../agenda/agenda_editor_screen.dart';
+import '../agenda/diary_report_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -39,6 +41,7 @@ class DashboardScreen extends StatelessWidget {
     final FinanceController finance = context.watch<FinanceController>();
     final SettingsController settings = context.watch<SettingsController>();
     final AgendaController agenda = context.watch<AgendaController>();
+    final ReminderController reminders = context.watch<ReminderController>();
     final ThemeData theme = Theme.of(context);
 
     final String sym = settings.currencySymbol;
@@ -110,7 +113,7 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            _quickActions(context, finance),
+            _quickActions(context, finance, reminders),
             const SizedBox(height: 20),
             if (finance.budgetsForMonth(DateTime.now()).isNotEmpty) ...<Widget>[
               _budgetSection(context, finance, sym),
@@ -196,38 +199,73 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _quickActions(BuildContext context, FinanceController finance) {
-    final List<_QuickAction> actions = <_QuickAction>[
-      _QuickAction('Categorias', Icons.category_outlined, () {
-        Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => const CategoriesScreen()));
-      }),
-      _QuickAction('Orçamentos', Icons.donut_large_outlined, () {
-        Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const BudgetsScreen()));
-      }),
-      _QuickAction('Metas', Icons.flag_outlined, () {
-        Navigator.of(context)
-            .push(MaterialPageRoute<void>(builder: (_) => const GoalsScreen()));
-      }),
-      _QuickAction('Lembretes', Icons.alarm_outlined, () {
-        Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => const RemindersScreen()));
-      }),
+  Widget _quickActions(BuildContext context, FinanceController finance,
+      ReminderController reminders) {
+    final List<Widget> cards = <Widget>[
+      StatCard(
+        label: 'Categorias',
+        value: '${finance.categories.length}',
+        caption: 'cadastradas',
+        icon: Icons.category_outlined,
+        color: const Color(0xFF4361EE),
+        onTap: () {
+          Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const CategoriesScreen()));
+        },
+      ),
+      StatCard(
+        label: 'Orçamentos',
+        value: '${finance.budgetsForMonth(DateTime.now()).length}',
+        caption: 'no mês',
+        icon: Icons.donut_large_outlined,
+        color: const Color(0xFFF8961E),
+        onTap: () {
+          Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const BudgetsScreen()));
+        },
+      ),
+      StatCard(
+        label: 'Metas',
+        value: '${finance.goals.length}',
+        caption: 'em andamento',
+        icon: Icons.flag_outlined,
+        color: const Color(0xFF9B5DE5),
+        onTap: () {
+          Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const GoalsScreen()));
+        },
+      ),
+      StatCard(
+        label: 'Lembretes',
+        value: '${reminders.activeCount}',
+        caption: 'ativos',
+        icon: Icons.alarm_outlined,
+        color: const Color(0xFF00BBF9),
+        onTap: () {
+          Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const RemindersScreen()));
+        },
+      ),
     ];
 
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: actions
-          .map(
-            (_QuickAction a) => ActionChip(
-              avatar: Icon(a.icon, size: 18),
-              label: Text(a.label),
-              onPressed: a.onTap,
-            ),
-          )
-          .toList(),
+    return Column(
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(child: cards[0]),
+            const SizedBox(width: 12),
+            Expanded(child: cards[1]),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: <Widget>[
+            Expanded(child: cards[2]),
+            const SizedBox(width: 12),
+            Expanded(child: cards[3]),
+          ],
+        ),
+      ],
     );
   }
 
@@ -376,7 +414,7 @@ class DashboardScreen extends StatelessWidget {
         children: <Widget>[
           CircleAvatar(
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
-            child: Icon(Icons.edit_note_rounded,
+            child: Icon(Icons.emoji_emotions_rounded,
                 color: theme.colorScheme.primary),
           ),
           const SizedBox(width: 14),
@@ -401,6 +439,14 @@ class DashboardScreen extends StatelessWidget {
                           ?.copyWith(fontStyle: FontStyle.italic)),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const DiaryReportScreen()));
+            },
+            tooltip: 'Relatório do diário',
+            icon: const Icon(Icons.star_half_rounded),
           ),
           const Icon(Icons.chevron_right),
         ],
@@ -468,11 +514,4 @@ class DashboardScreen extends StatelessWidget {
       ],
     );
   }
-}
-
-class _QuickAction {
-  _QuickAction(this.label, this.icon, this.onTap);
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
 }

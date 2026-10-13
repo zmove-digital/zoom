@@ -303,9 +303,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 40,
+              reservedSize: 56,
               getTitlesWidget: (double value, TitleMeta meta) => Text(
-                Money.compact(value, sym.replaceAll(' ', '')),
+                Money.compact(value, sym, space: false),
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.visible,
                 style: theme.textTheme.labelSmall,
               ),
             ),

@@ -16,6 +16,7 @@ class AgendaEntry {
     this.mood = Mood.neutral,
     this.colorHex = '6C5CE7',
     this.tags = const <String>[],
+    this.rating = 0,
     DateTime? createdAt,
     DateTime? updatedAt,
   })  : createdAt = createdAt ?? DateTime.now(),
@@ -28,6 +29,7 @@ class AgendaEntry {
   Mood mood;
   String colorHex;
   List<String> tags;
+  int rating;
   final DateTime createdAt;
   DateTime updatedAt;
 
@@ -38,6 +40,7 @@ class AgendaEntry {
     Mood? mood,
     String? colorHex,
     List<String>? tags,
+    int? rating,
   }) {
     return AgendaEntry(
       id: id,
@@ -47,6 +50,7 @@ class AgendaEntry {
       mood: mood ?? this.mood,
       colorHex: colorHex ?? this.colorHex,
       tags: tags ?? this.tags,
+      rating: rating ?? this.rating,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );
@@ -60,6 +64,7 @@ class AgendaEntry {
         'mood': mood.name,
         'colorHex': colorHex,
         'tags': tags,
+        'rating': rating,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
       };
@@ -74,6 +79,7 @@ class AgendaEntry {
         tags: (json['tags'] as List<dynamic>? ?? <dynamic>[])
             .map((dynamic e) => e.toString())
             .toList(),
+        rating: ((json['rating'] as num?)?.toInt() ?? 0).clamp(0, 5),
         createdAt: json['createdAt'] == null
             ? null
             : DateTime.parse(json['createdAt'] as String),

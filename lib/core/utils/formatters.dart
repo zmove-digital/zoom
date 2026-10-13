@@ -10,15 +10,16 @@ class Money {
     return formatter.format(value).trim();
   }
 
-  static String compact(double value, String symbol) {
+  static String compact(double value, String symbol, {bool space = true}) {
+    final String prefix = space ? '$symbol ' : symbol;
     final double abs = value.abs();
     if (abs >= 1000000) {
-      return '$symbol ${(value / 1000000).toStringAsFixed(1)}M';
+      return '$prefix${(value / 1000000).toStringAsFixed(1)}M';
     }
     if (abs >= 1000) {
-      return '$symbol ${(value / 1000).toStringAsFixed(1)}k';
+      return '$prefix${(value / 1000).toStringAsFixed(1)}k';
     }
-    return '$symbol ${value.toStringAsFixed(2)}';
+    return '$prefix${value.toStringAsFixed(2)}';
   }
 
   static double parse(String raw) {
