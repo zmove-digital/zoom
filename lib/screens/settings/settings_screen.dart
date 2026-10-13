@@ -449,6 +449,8 @@ class _BackupSection extends StatelessWidget {
     final AgendaController agenda = context.read<AgendaController>();
     final ReminderController reminders = context.read<ReminderController>();
     final DateTime? last = settings.settings.lastBackupAt;
+    final bool protectBackup =
+        settings.settings.pinEnabled && settings.settings.pin.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,12 +478,19 @@ class _BackupSection extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.upload_file_outlined),
                 title: const Text('Enviar backup agora'),
-                subtitle: Text(last == null
-                    ? 'Nunca enviado'
-                    : 'Último: ${DateHelpers.dateTime.format(last)}'),
+                subtitle: Text(
+                  <String>[
+                    last == null
+                        ? 'Nunca enviado'
+                        : 'Último: ${DateHelpers.dateTime.format(last)}',
+                    if (protectBackup) 'protegido pelo PIN',
+                  ].join(' • '),
+                ),
                 onTap: () async {
                   await backup.shareBackup(
-                      email: settings.settings.backupEmail);
+                    email: settings.settings.backupEmail,
+                    pin: protectBackup ? settings.settings.pin : null,
+                  );
                   settings.markBackupDone();
                 },
               ),
@@ -568,15 +577,37 @@ class _BackupSection extends StatelessWidget {
       ),
     );
     if (ok != true) return;
-    final bool done = await backup.restoreFromPickedFile();
+    final String? raw = await backup.pickBackupRaw();
     if (!context.mounted) return;
-    if (done) {
+    if (raw == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nenhum arquivo selecionado')),
+      );
+      return;
+    }
+    RestoreOutcome outcome = await backup.restoreFromRaw(raw);
+    if (outcome == RestoreOutcome.needsPin) {
+      if (!context.mounted) return;
+      final String? pin = await _pinDialog(
+        context,
+        'PIN do backup',
+        'Este backup está protegido. Informe o mesmo PIN usado no app.',
+      );
+      if (pin == null || pin.isEmpty) return;
+      outcome = await backup.restoreFromRaw(raw, pin: pin);
+    }
+    if (!context.mounted) return;
+    if (outcome == RestoreOutcome.ok) {
       settings.reload();
       finance.reload();
       agenda.reload();
       reminders.reload();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Backup restaurado com sucesso!')),
+      );
+    } else if (outcome == RestoreOutcome.wrongPinOrCorrupted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PIN incorreto ou arquivo corrompido')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -612,12 +643,20 @@ class _PrivacySection extends StatelessWidget {
                   final TextEditingController c = TextEditingController();
                   final String? pin = await _textDialog(
                     context,
-                    'Defina um PIN (4 a 6 dígitos)',
+                    'Defina um PIN (4 dígitos)',
                     c,
                     keyboard: TextInputType.number,
+                    maxLength: SecurityRules.pinLength,
                   );
-                  if (pin != null && pin.length >= 4) {
+                  if (pin != null && RegExp(r'^\d{4}$').hasMatch(pin)) {
                     settings.setPin(enabled: true, pin: pin);
+                  } else if (pin != null && pin.isNotEmpty) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('O PIN deve ter exatamente 4 dígitos')),
+                      );
+                    }
                   }
                 },
               ),
@@ -667,6 +706,7 @@ Future<String?> _textDialog(
   String title,
   TextEditingController controller, {
   TextInputType keyboard = TextInputType.text,
+  int? maxLength,
 }) {
   return showDialog<String>(
     context: context,
@@ -676,6 +716,7 @@ Future<String?> _textDialog(
         controller: controller,
         autofocus: true,
         keyboardType: keyboard,
+        maxLength: maxLength,
         decoration: const InputDecoration(labelText: 'Valor'),
       ),
       actions: <Widget>[
@@ -684,6 +725,44 @@ Future<String?> _textDialog(
         FilledButton(
           onPressed: () => Navigator.pop(context, controller.text.trim()),
           child: const Text('Salvar'),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<String?> _pinDialog(
+  BuildContext context,
+  String title,
+  String message,
+) {
+  final TextEditingController controller = TextEditingController();
+  return showDialog<String>(
+    context: context,
+    builder: (BuildContext context) => AlertDialog(
+      title: Text(title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(message),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller,
+            autofocus: true,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            maxLength: SecurityRules.pinLength,
+            decoration: const InputDecoration(labelText: 'PIN'),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+            onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, controller.text.trim()),
+          child: const Text('Restaurar'),
         ),
       ],
     ),

@@ -7,6 +7,9 @@ import 'package:share_plus/share_plus.dart';
 
 import '../core/constants.dart';
 import '../data/storage/local_database.dart';
+import 'backup_crypto.dart';
+
+enum RestoreOutcome { ok, needsPin, wrongPinOrCorrupted, invalid }
 
 class BackupService {
   BackupService(this._db);
@@ -23,24 +26,31 @@ class BackupService {
     };
   }
 
-  Future<File> writeBackupFile() async {
+  Future<File> writeBackupFile({String? pin}) async {
     final Directory dir = await getTemporaryDirectory();
     final DateTime now = DateTime.now();
     final String stamp =
         '${now.year}${_two(now.month)}${_two(now.day)}_${_two(now.hour)}${_two(now.minute)}';
     final File file = File('${dir.path}${Platform.pathSeparator}zoom_backup_$stamp.json');
-    final String encoded =
-        const JsonEncoder.withIndent('  ').convert(buildPayload());
+    final bool protect = pin != null && pin.isNotEmpty;
+    final Map<String, dynamic> payload =
+        protect ? BackupCrypto.encrypt(buildPayload(), pin) : buildPayload();
+    final String encoded = const JsonEncoder.withIndent('  ').convert(payload);
     await file.writeAsString(encoded, flush: true);
     return file;
   }
 
-  Future<void> shareBackup({String? email}) async {
-    final File file = await writeBackupFile();
+  Future<void> shareBackup({String? email, String? pin}) async {
+    final bool protect = pin != null && pin.isNotEmpty;
+    final File file = await writeBackupFile(pin: pin);
     final String subject = 'Backup ZOOM - ${DateTime.now().toIso8601String().substring(0, 10)}';
-    final String body = email == null || email.isEmpty
+    String body = email == null || email.isEmpty
         ? 'Segue o backup dos meus dados do ZOOM. Guarde este arquivo em local seguro.'
         : 'Segue o backup dos meus dados do ZOOM. Guarde este arquivo em local seguro.\n\nDica: envie para $email.';
+    if (protect) {
+      body = '$body\n\nEste arquivo está protegido pelo PIN do app. '
+          'Para restaurar, informe o mesmo PIN.';
+    }
     try {
       await Share.shareXFiles(
         <XFile>[XFile(file.path, mimeType: 'application/json')],
@@ -52,24 +62,43 @@ class BackupService {
     }
   }
 
-  Future<bool> restoreFromPickedFile() async {
+  Future<String?> pickBackupRaw() async {
     final FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: <String>['json'],
     );
-    if (result == null || result.files.single.path == null) return false;
+    final String? path = result?.files.single.path;
+    if (path == null) return null;
     try {
-      final String raw = await File(result.files.single.path!).readAsString();
-      final Map<String, dynamic> decoded =
-          jsonDecode(raw) as Map<String, dynamic>;
-      final Object? data = decoded['data'];
-      if (data is! Map) return false;
+      return await File(path).readAsString();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<RestoreOutcome> restoreFromRaw(String raw, {String? pin}) async {
+    Map<String, dynamic> decoded;
+    try {
+      decoded = jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {
+      return RestoreOutcome.invalid;
+    }
+    Map<String, dynamic> payload = decoded;
+    if (BackupCrypto.isEncrypted(decoded)) {
+      if (pin == null || pin.isEmpty) return RestoreOutcome.needsPin;
+      final Map<String, dynamic>? plain = BackupCrypto.decrypt(decoded, pin);
+      if (plain == null) return RestoreOutcome.wrongPinOrCorrupted;
+      payload = plain;
+    }
+    final Object? data = payload['data'];
+    if (data is! Map) return RestoreOutcome.invalid;
+    try {
       _db.replaceAll(data.cast<String, dynamic>());
       await _db.flush();
-      return true;
     } catch (_) {
-      return false;
+      return RestoreOutcome.invalid;
     }
+    return RestoreOutcome.ok;
   }
 
   static String _two(int value) => value.toString().padLeft(2, '0');

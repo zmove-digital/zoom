@@ -32,6 +32,8 @@ class AppSettings {
     this.lastBackupAt,
     this.pinEnabled = false,
     this.pin = '',
+    this.pinAttempts = 0,
+    this.pinLockedUntil,
     this.hideBalance = false,
   });
 
@@ -58,6 +60,8 @@ class AppSettings {
   DateTime? lastBackupAt;
   bool pinEnabled;
   String pin;
+  int pinAttempts;
+  DateTime? pinLockedUntil;
   bool hideBalance;
 
   AppSettings copyWith({
@@ -84,6 +88,8 @@ class AppSettings {
     Object? lastBackupAt = _unset,
     bool? pinEnabled,
     String? pin,
+    int? pinAttempts,
+    Object? pinLockedUntil = _unset,
     bool? hideBalance,
   }) {
     return AppSettings(
@@ -117,6 +123,10 @@ class AppSettings {
           lastBackupAt == _unset ? this.lastBackupAt : lastBackupAt as DateTime?,
       pinEnabled: pinEnabled ?? this.pinEnabled,
       pin: pin ?? this.pin,
+      pinAttempts: pinAttempts ?? this.pinAttempts,
+      pinLockedUntil: pinLockedUntil == _unset
+          ? this.pinLockedUntil
+          : pinLockedUntil as DateTime?,
       hideBalance: hideBalance ?? this.hideBalance,
     );
   }
@@ -145,6 +155,8 @@ class AppSettings {
         'lastBackupAt': lastBackupAt?.toIso8601String(),
         'pinEnabled': pinEnabled,
         'pin': pin,
+        'pinAttempts': pinAttempts,
+        'pinLockedUntil': pinLockedUntil?.toIso8601String(),
         'hideBalance': hideBalance,
       };
 
@@ -175,6 +187,10 @@ class AppSettings {
             : DateTime.parse(json['lastBackupAt'] as String),
         pinEnabled: json['pinEnabled'] as bool? ?? false,
         pin: json['pin'] as String? ?? '',
+        pinAttempts: (json['pinAttempts'] as num?)?.toInt() ?? 0,
+        pinLockedUntil: json['pinLockedUntil'] == null
+            ? null
+            : DateTime.parse(json['pinLockedUntil'] as String),
         hideBalance: json['hideBalance'] as bool? ?? false,
       );
 }

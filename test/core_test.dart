@@ -4,6 +4,7 @@ import 'package:zoom/core/utils/formatters.dart';
 import 'package:zoom/data/models/agenda_entry.dart';
 import 'package:zoom/data/models/category.dart';
 import 'package:zoom/data/models/transaction.dart';
+import 'package:zoom/services/backup_crypto.dart';
 
 void main() {
   group('Money', () {
@@ -100,6 +101,44 @@ void main() {
       expect(restored.mood, Mood.great);
       expect(restored.tags, <String>['dieta', 'foco']);
       expect(restored.content, 'Texto livre');
+    });
+  });
+
+  group('BackupCrypto', () {
+    final Map<String, dynamic> payload = <String, dynamic>{
+      'app': 'ZOOM',
+      'data': <String, dynamic>{
+        'transactions': <dynamic>[
+          <String, dynamic>{'id': 't1', 'amount': 10.5},
+        ],
+      },
+    };
+
+    test('encrypt gera envelope e não expõe o conteúdo', () {
+      final Map<String, dynamic> env = BackupCrypto.encrypt(payload, '1234');
+      expect(BackupCrypto.isEncrypted(env), isTrue);
+      expect(env.containsKey('salt'), isTrue);
+      expect(env.containsKey('iv'), isTrue);
+      expect(env['cipher'], 'AES-256-GCM');
+      expect(env.toString().contains('10.5'), isFalse);
+    });
+
+    test('decrypt com o PIN correto recupera os dados', () {
+      final Map<String, dynamic> env = BackupCrypto.encrypt(payload, '1234');
+      final Map<String, dynamic>? decoded = BackupCrypto.decrypt(env, '1234');
+      expect(decoded, isNotNull);
+      expect(decoded!['data'], payload['data']);
+    });
+
+    test('decrypt com PIN errado retorna null', () {
+      final Map<String, dynamic> env = BackupCrypto.encrypt(payload, '1234');
+      expect(BackupCrypto.decrypt(env, '9999'), isNull);
+    });
+
+    test('salt aleatório muda o texto cifrado', () {
+      final Map<String, dynamic> a = BackupCrypto.encrypt(payload, '1234');
+      final Map<String, dynamic> b = BackupCrypto.encrypt(payload, '1234');
+      expect(a['data'], isNot(b['data']));
     });
   });
 }

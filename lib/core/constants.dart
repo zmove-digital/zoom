@@ -6,6 +6,12 @@ class AppInfo {
   static const String version = '1.0.0';
 }
 
+class SecurityRules {
+  static const int pinLength = 4;
+  static const int maxPinAttempts = 6;
+  static const Duration pinLockout = Duration(minutes: 15);
+}
+
 class DbKeys {
   static const String transactions = 'transactions';
   static const String categories = 'categories';

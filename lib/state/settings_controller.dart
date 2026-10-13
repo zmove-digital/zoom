@@ -102,8 +102,42 @@ class SettingsController extends ChangeNotifier {
   void markBackupDone() =>
       update((AppSettings s) => s.copyWith(lastBackupAt: DateTime.now()));
 
-  void setPin({required bool enabled, String? pin}) =>
-      update((AppSettings s) => s.copyWith(pinEnabled: enabled, pin: pin));
+  void setPin({required bool enabled, String? pin}) => update(
+        (AppSettings s) => s.copyWith(
+          pinEnabled: enabled,
+          pin: pin,
+          pinAttempts: 0,
+          pinLockedUntil: null,
+        ),
+      );
+
+  bool get pinLocked {
+    final DateTime? until = settings.pinLockedUntil;
+    return until != null && until.isAfter(DateTime.now());
+  }
+
+  Duration get pinLockRemaining {
+    final DateTime? until = settings.pinLockedUntil;
+    if (until == null) return Duration.zero;
+    final Duration remaining = until.difference(DateTime.now());
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  void registerFailedPinAttempt() {
+    final int next = settings.pinAttempts + 1;
+    if (next >= SecurityRules.maxPinAttempts) {
+      update((AppSettings s) => s.copyWith(
+            pinAttempts: 0,
+            pinLockedUntil: DateTime.now().add(SecurityRules.pinLockout),
+          ));
+    } else {
+      update((AppSettings s) => s.copyWith(pinAttempts: next));
+    }
+  }
+
+  void clearPinAttempts() => update(
+        (AppSettings s) => s.copyWith(pinAttempts: 0, pinLockedUntil: null),
+      );
 
   void setCurrency(String code) =>
       update((AppSettings s) => s.copyWith(currencyCode: code));
