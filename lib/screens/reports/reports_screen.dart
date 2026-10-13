@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/category.dart';
 import '../../data/models/transaction.dart';
+import '../../services/pdf_report_service.dart';
 import '../../state/finance_controller.dart';
 import '../../state/settings_controller.dart';
 import '../../widgets/app_scaffold.dart';
@@ -31,6 +32,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   _PieMode _pieMode = _PieMode.expense;
   DateTime? _customFrom;
   DateTime? _customTo;
+  final Set<String> _selectedCategories = <String>{};
 
   _PieMode get _nextPieMode =>
       _PieMode.values[(_pieMode.index + 1) % _PieMode.values.length];
@@ -322,6 +324,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
             ),
           const SizedBox(height: 20),
+          _categoryReportSection(finance, theme, sym, from, to),
+          const SizedBox(height: 20),
           Text('Últimos 6 meses',
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.w700)),
@@ -349,6 +353,246 @@ class _ReportsScreenState extends State<ReportsScreen> {
         return 'Tudo';
       case _Period.custom:
         return 'Período';
+    }
+  }
+
+  Widget _categoryReportSection(FinanceController finance, ThemeData theme,
+      String sym, DateTime from, DateTime to) {
+    final List<_ReportGroup> groups = _reportGroups(finance, from, to);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text('Relatório por categoria',
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 6),
+        Text(
+          'Escolha uma ou mais categorias para ver os lançamentos e exportar em PDF no período selecionado.',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.outline),
+        ),
+        const SizedBox(height: 10),
+        SectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.checklist_rtl),
+                title: Text(_selectedCategories.isEmpty
+                    ? 'Escolher categorias'
+                    : 'Categorias selecionadas'),
+                subtitle: Text(_selectedCategories.isEmpty
+                    ? 'Nenhuma categoria escolhida'
+                    : '${_selectedCategories.length} selecionada(s)'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _pickCategories(finance),
+              ),
+              if (_selectedCategories.isNotEmpty) ...<Widget>[
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: _selectedCategories
+                      .map((String id) => finance.categoryById(id))
+                      .whereType<Category>()
+                      .map((Category c) => Chip(
+                            avatar: Icon(c.icon, size: 16, color: c.color),
+                            label: Text(c.name),
+                            onDeleted: () => setState(
+                                () => _selectedCategories.remove(c.id)),
+                          ))
+                      .toList(),
+                ),
+                const SizedBox(height: 8),
+                if (groups.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                        'Sem lançamentos dessas categorias no período.',
+                        style: theme.textTheme.bodySmall),
+                  )
+                else
+                  ...groups.map(
+                      (_ReportGroup g) => _groupTile(g, theme, sym)),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: groups.isEmpty
+                        ? null
+                        : () => _exportPdf(finance, from, to, sym),
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    label: const Text('Exportar PDF'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<_ReportGroup> _reportGroups(
+      FinanceController finance, DateTime from, DateTime to) {
+    final List<_ReportGroup> groups = <_ReportGroup>[];
+    for (final String id in _selectedCategories) {
+      final Category? c = finance.categoryById(id);
+      if (c == null) continue;
+      final List<Transaction> items =
+          finance.filtered(categoryId: id, from: from, to: to);
+      if (items.isEmpty) continue;
+      double total = 0;
+      for (final Transaction t in items) {
+        total += t.signedAmount;
+      }
+      groups.add(_ReportGroup(c, items, total));
+    }
+    groups.sort((_ReportGroup a, _ReportGroup b) => a.category.name
+        .toLowerCase()
+        .compareTo(b.category.name.toLowerCase()));
+    return groups;
+  }
+
+  Widget _groupTile(_ReportGroup g, ThemeData theme, String sym) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Icon(g.category.icon, size: 18, color: g.category.color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(g.category.name,
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+              ),
+              Text(
+                Money.format(g.total, '', symbol: sym),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: g.total < 0
+                      ? theme.colorScheme.error
+                      : const Color(0xFF06D6A0),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ...g.items.map(
+            (Transaction t) => Padding(
+              padding: const EdgeInsets.only(left: 26, top: 2, bottom: 2),
+              child: Row(
+                children: <Widget>[
+                  SizedBox(
+                    width: 76,
+                    child: Text(DateHelpers.full.format(t.date),
+                        style: theme.textTheme.bodySmall),
+                  ),
+                  Expanded(
+                    child: Text(
+                      t.description.trim().isEmpty
+                          ? g.category.name
+                          : t.description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                  Text(
+                    '${t.type == TransactionType.income ? '+' : '-'} ${Money.format(t.amount.abs(), '', symbol: sym)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: t.type == TransactionType.income
+                          ? const Color(0xFF06D6A0)
+                          : theme.colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Divider(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickCategories(FinanceController finance) async {
+    final Set<String> temp = <String>{..._selectedCategories};
+    final Set<String>? result = await showDialog<Set<String>>(
+      context: context,
+      builder: (BuildContext ctx) => StatefulBuilder(
+        builder: (BuildContext ctx, StateSetter setLocal) => AlertDialog(
+          title: const Text('Escolher categorias'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: finance.categories.isEmpty
+                ? const Text('Nenhuma categoria cadastrada.')
+                : ListView(
+                    shrinkWrap: true,
+                    children: finance.categories
+                        .map((Category c) => CheckboxListTile(
+                              value: temp.contains(c.id),
+                              onChanged: (bool? v) {
+                                setLocal(() {
+                                  if (v == true) {
+                                    temp.add(c.id);
+                                  } else {
+                                    temp.remove(c.id);
+                                  }
+                                });
+                              },
+                              secondary: Icon(c.icon, color: c.color),
+                              title: Text(c.name),
+                            ))
+                        .toList(),
+                  ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, temp),
+              child: const Text('Aplicar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result != null) {
+      setState(() {
+        _selectedCategories
+          ..clear()
+          ..addAll(result);
+      });
+    }
+  }
+
+  Future<void> _exportPdf(
+      FinanceController finance, DateTime from, DateTime to, String sym) async {
+    try {
+      final File file = await PdfReportService().buildCategoryReport(
+        finance: finance,
+        categoryIds: _selectedCategories.toList(),
+        from: from,
+        to: to,
+        periodLabel: _periodLabel(),
+        symbol: sym,
+      );
+      await Share.shareXFiles(
+        <XFile>[XFile(file.path, mimeType: 'application/pdf')],
+        subject: 'Relatório ZOOM - ${_periodLabel()}',
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível exportar agora')),
+        );
+      }
     }
   }
 
@@ -488,4 +732,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
       }
     }
   }
+}
+
+class _ReportGroup {
+  _ReportGroup(this.category, this.items, this.total);
+
+  final Category category;
+  final List<Transaction> items;
+  final double total;
 }
