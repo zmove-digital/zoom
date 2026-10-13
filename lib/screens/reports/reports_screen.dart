@@ -316,6 +316,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
+              reservedSize: 32,
               getTitlesWidget: (double value, TitleMeta meta) {
                 final int i = value.toInt();
                 if (i < 0 || i >= income.length) {
@@ -325,9 +326,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     .format(income[i].key)
                     .replaceAll('.', '');
                 return Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(label.toUpperCase(),
-                      style: theme.textTheme.labelSmall),
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    label.toUpperCase(),
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
+                    style: theme.textTheme.labelSmall,
+                  ),
                 );
               },
             ),

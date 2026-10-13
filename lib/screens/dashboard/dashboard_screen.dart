@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/budget.dart';
 import '../../data/models/category.dart';
@@ -9,7 +10,6 @@ import '../../data/models/goal.dart';
 import '../../data/models/transaction.dart';
 import '../../state/agenda_controller.dart';
 import '../../state/finance_controller.dart';
-import '../../state/reminder_controller.dart';
 import '../../state/settings_controller.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/category_avatar.dart';
@@ -41,7 +41,6 @@ class DashboardScreen extends StatelessWidget {
     final FinanceController finance = context.watch<FinanceController>();
     final SettingsController settings = context.watch<SettingsController>();
     final AgendaController agenda = context.watch<AgendaController>();
-    final ReminderController reminders = context.watch<ReminderController>();
     final ThemeData theme = Theme.of(context);
 
     final String sym = settings.currencySymbol;
@@ -95,8 +94,8 @@ class DashboardScreen extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   child: StatCard(
-                    label: 'Entradas (mês)',
-                    value: Money.compact(income, sym),
+                    label: 'Entradas',
+                    value: Money.format(income, '', symbol: sym),
                     icon: Icons.arrow_upward_rounded,
                     color: const Color(0xFF06D6A0),
                   ),
@@ -104,8 +103,8 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: StatCard(
-                    label: 'Saídas (mês)',
-                    value: Money.compact(expense, sym),
+                    label: 'Saídas',
+                    value: Money.format(expense, '', symbol: sym),
                     icon: Icons.arrow_downward_rounded,
                     color: const Color(0xFFEF476F),
                   ),
@@ -113,7 +112,7 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            _quickActions(context, finance, reminders),
+            _quickActions(context),
             const SizedBox(height: 20),
             if (finance.budgetsForMonth(DateTime.now()).isNotEmpty) ...<Widget>[
               _budgetSection(context, finance, sym),
@@ -183,11 +182,6 @@ class DashboardScreen extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    Text(
-                      'Registre uma entrada ou saída',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: onHero.withValues(alpha: 0.85)),
-                    ),
                   ],
                 ),
               ),
@@ -199,73 +193,104 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _quickActions(BuildContext context, FinanceController finance,
-      ReminderController reminders) {
-    final List<Widget> cards = <Widget>[
-      StatCard(
-        label: 'Categorias',
-        value: '${finance.categories.length}',
-        caption: 'cadastradas',
-        icon: Icons.category_outlined,
-        color: const Color(0xFF4361EE),
-        onTap: () {
-          Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const CategoriesScreen()));
-        },
-      ),
-      StatCard(
-        label: 'Orçamentos',
-        value: '${finance.budgetsForMonth(DateTime.now()).length}',
-        caption: 'no mês',
-        icon: Icons.donut_large_outlined,
-        color: const Color(0xFFF8961E),
-        onTap: () {
-          Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const BudgetsScreen()));
-        },
-      ),
-      StatCard(
-        label: 'Metas',
-        value: '${finance.goals.length}',
-        caption: 'em andamento',
-        icon: Icons.flag_outlined,
-        color: const Color(0xFF9B5DE5),
-        onTap: () {
-          Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const GoalsScreen()));
-        },
-      ),
-      StatCard(
-        label: 'Lembretes',
-        value: '${reminders.activeCount}',
-        caption: 'ativos',
-        icon: Icons.alarm_outlined,
-        color: const Color(0xFF00BBF9),
-        onTap: () {
-          Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const RemindersScreen()));
-        },
-      ),
-    ];
-
+  Widget _quickActions(BuildContext context) {
     return Column(
       children: <Widget>[
         Row(
           children: <Widget>[
-            Expanded(child: cards[0]),
+            Expanded(
+              child: _navCard(
+                context,
+                label: 'Categorias',
+                icon: Icons.category_outlined,
+                color: const Color(0xFF4361EE),
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const CategoriesScreen()));
+                },
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: cards[1]),
+            Expanded(
+              child: _navCard(
+                context,
+                label: 'Orçamentos',
+                icon: Icons.donut_large_outlined,
+                color: const Color(0xFFF8961E),
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const BudgetsScreen()));
+                },
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: <Widget>[
-            Expanded(child: cards[2]),
+            Expanded(
+              child: _navCard(
+                context,
+                label: 'Metas',
+                icon: Icons.flag_outlined,
+                color: const Color(0xFF9B5DE5),
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const GoalsScreen()));
+                },
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: cards[3]),
+            Expanded(
+              child: _navCard(
+                context,
+                label: 'Lembretes',
+                icon: Icons.alarm_outlined,
+                color: const Color(0xFF00BBF9),
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => const RemindersScreen()));
+                },
+              ),
+            ),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _navCard(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final ThemeData theme = Theme.of(context);
+    return SectionCard(
+      padding: const EdgeInsets.all(14),
+      onTap: onTap,
+      child: Row(
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: withOpacity(color, 0.16),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
