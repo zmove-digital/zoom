@@ -17,6 +17,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/hero_card.dart';
 import '../../widgets/section_card.dart';
 import '../../widgets/transaction_tile.dart';
+import '../accounts/accounts_screen.dart';
 import '../categories/categories_screen.dart';
 import '../goals/goals_screen.dart';
 import '../budgets/budgets_screen.dart';
@@ -89,6 +90,8 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _primaryAction(context),
+            const SizedBox(height: 12),
+            _accountsShortcut(context, finance, sym, theme),
             const SizedBox(height: 16),
             Row(
               children: <Widget>[
@@ -203,6 +206,47 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _accountsShortcut(BuildContext context, FinanceController finance,
+      String sym, ThemeData theme) {
+    return SectionCard(
+      onTap: () {
+        Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => const AccountsScreen()));
+      },
+      child: Row(
+        children: <Widget>[
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.account_balance_wallet_outlined,
+                color: theme.colorScheme.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text('Contas',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  finance.accounts.isEmpty
+                      ? 'Crie sua primeira conta'
+                      : '${finance.accounts.length} ${finance.accounts.length == 1 ? 'conta' : 'contas'} • ${Money.format(finance.totalBalance, '', symbol: sym)}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right),
+        ],
       ),
     );
   }
@@ -540,6 +584,7 @@ class DashboardScreen extends StatelessWidget {
                       transaction: t,
                       category: finance.categoryById(t.categoryId),
                       currencySymbol: sym,
+                      accountName: finance.accountById(t.accountId)?.name,
                       onTap: () {
                         Navigator.of(context).push(MaterialPageRoute<void>(
                           builder: (_) => TransactionEditorScreen(existing: t),

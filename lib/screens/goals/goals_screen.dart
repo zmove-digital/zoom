@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/id_generator.dart';
+import '../../data/models/account.dart';
 import '../../data/models/category.dart';
-import '../../data/models/goal.dart';
-import '../../state/finance_controller.dart';
+import '../../data/models/goal.dart';import '../../state/finance_controller.dart';
 import '../../state/settings_controller.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/empty_state.dart';
@@ -139,32 +139,78 @@ class GoalsScreen extends StatelessWidget {
 
   Future<void> _contribute(
       BuildContext context, Goal goal, String sym) async {
+    final FinanceController finance = context.read<FinanceController>();
+    final List<Account> accounts = finance.accounts;
+    if (accounts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Crie uma conta primeiro')),
+      );
+      return;
+    }
     final TextEditingController controller = TextEditingController();
+    String accountId = accounts.first.id;
     final double? value = await showDialog<double>(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: Text('Guardar em "${goal.name}"'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(labelText: 'Valor', prefixText: '$sym '),
+      builder: (BuildContext ctx) => StatefulBuilder(
+        builder: (BuildContext ctx, StateSetter setLocal) => AlertDialog(
+          title: Text('Guardar em "${goal.name}"'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              TextField(
+                controller: controller,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration:
+                    InputDecoration(labelText: 'Valor', prefixText: '$sym '),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: accountId,
+                decoration: const InputDecoration(
+                  labelText: 'Conta de origem',
+                  prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                ),
+                items: accounts
+                    .map(
+                      (Account a) => DropdownMenuItem<String>(
+                        value: a.id,
+                        child: Row(
+                          children: <Widget>[
+                            Icon(a.icon, size: 18, color: a.color),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(a.name,
+                                  overflow: TextOverflow.ellipsis),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (String? v) {
+                  if (v != null) setLocal(() => accountId = v);
+                },
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(ctx, Money.parse(controller.text)),
+              child: const Text('Guardar'),
+            ),
+          ],
         ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(context, Money.parse(controller.text)),
-            child: const Text('Guardar'),
-          ),
-        ],
       ),
     );
     if (value != null && value > 0 && context.mounted) {
-      context.read<FinanceController>().contributeToGoal(goal.id, value);
+      finance.contributeToGoal(goal.id, accountId, value);
     }
   }
 

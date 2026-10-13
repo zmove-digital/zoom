@@ -10,6 +10,7 @@ class TransactionTile extends StatelessWidget {
     required this.transaction,
     required this.category,
     required this.currencySymbol,
+    this.accountName,
     this.onTap,
     this.onLongPress,
     this.onSettle,
@@ -19,6 +20,7 @@ class TransactionTile extends StatelessWidget {
   final Transaction transaction;
   final Category? category;
   final String currencySymbol;
+  final String? accountName;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final VoidCallback? onSettle;
@@ -49,7 +51,7 @@ class TransactionTile extends StatelessWidget {
         children: <Widget>[
           Flexible(
             child: Text(
-              '${category?.name ?? 'Sem categoria'} • ${DateHelpers.full.format(transaction.date)}',
+              '${category?.name ?? 'Sem categoria'}${accountName != null ? ' • $accountName' : ''} • ${DateHelpers.full.format(transaction.date)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

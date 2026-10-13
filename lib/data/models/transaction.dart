@@ -57,6 +57,7 @@ class Transaction {
     required this.amount,
     required this.categoryId,
     required this.date,
+    this.accountId,
     this.description = '',
     this.notes = '',
     this.isPaid,
@@ -70,6 +71,7 @@ class Transaction {
   double amount;
   String categoryId;
   DateTime date;
+  String? accountId;
   String description;
   String notes;
 
@@ -98,6 +100,7 @@ class Transaction {
     double? amount,
     String? categoryId,
     DateTime? date,
+    String? accountId,
     String? description,
     String? notes,
     bool? isPaid,
@@ -108,6 +111,7 @@ class Transaction {
       amount: amount ?? this.amount,
       categoryId: categoryId ?? this.categoryId,
       date: date ?? this.date,
+      accountId: accountId ?? this.accountId,
       description: description ?? this.description,
       notes: notes ?? this.notes,
       isPaid: isPaid ?? this.isPaid,
@@ -123,6 +127,7 @@ class Transaction {
         'amount': amount,
         'categoryId': categoryId,
         'date': date.toIso8601String(),
+        'accountId': accountId,
         'description': description,
         'notes': notes,
         'isPaid': isPaid,
@@ -137,6 +142,7 @@ class Transaction {
         amount: (json['amount'] as num).toDouble(),
         categoryId: json['categoryId'] as String,
         date: DateTime.parse(json['date'] as String),
+        accountId: json['accountId'] as String?,
         description: json['description'] as String? ?? '',
         notes: json['notes'] as String? ?? '',
         isPaid: json['isPaid'] as bool?,

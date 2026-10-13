@@ -1,7 +1,18 @@
+import '../models/account.dart';
 import '../models/category.dart';
 import '../../core/utils/id_generator.dart';
 
 class SeedData {
+  static List<Account> defaultAccounts() {
+    return <Account>[
+      Account(
+        id: newId(),
+        name: 'Carteira',
+        type: AccountType.cash,
+      ),
+    ];
+  }
+
   static List<Category> defaultCategories() {
     return <Category>[
       Category(

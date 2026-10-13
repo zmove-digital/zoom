@@ -2,26 +2,65 @@ import 'package:flutter/material.dart';
 
 import 'category.dart';
 
+class GoalContribution {
+  GoalContribution({
+    required this.id,
+    required this.accountId,
+    required this.amount,
+    DateTime? date,
+  }) : date = date ?? DateTime.now();
+
+  final String id;
+  final String accountId;
+  final double amount;
+  final DateTime date;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'id': id,
+        'accountId': accountId,
+        'amount': amount,
+        'date': date.toIso8601String(),
+      };
+
+  factory GoalContribution.fromJson(Map<String, dynamic> json) =>
+      GoalContribution(
+        id: json['id'] as String,
+        accountId: json['accountId'] as String? ?? '',
+        amount: (json['amount'] as num?)?.toDouble() ?? 0,
+        date: json['date'] == null
+            ? null
+            : DateTime.parse(json['date'] as String),
+      );
+}
+
 class Goal {
   Goal({
     required this.id,
     required this.name,
     required this.targetAmount,
-    this.savedAmount = 0,
+    List<GoalContribution>? contributions,
     this.deadline,
     this.colorHex = '06D6A0',
     this.iconCodePoint = 0xe8f7,
-  });
+  }) : contributions = contributions ?? <GoalContribution>[];
 
   final String id;
   String name;
   double targetAmount;
-  double savedAmount;
+  List<GoalContribution> contributions;
   DateTime? deadline;
   String colorHex;
   int iconCodePoint;
 
   Color get color => colorFromHex(colorHex);
+
+  double get savedAmount {
+    double total = 0;
+    for (final GoalContribution c in contributions) {
+      total += c.amount;
+    }
+    return total;
+  }
 
   double get progress => targetAmount <= 0
       ? 0.0
@@ -31,7 +70,7 @@ class Goal {
   Goal copyWith({
     String? name,
     double? targetAmount,
-    double? savedAmount,
+    List<GoalContribution>? contributions,
     DateTime? deadline,
     String? colorHex,
     int? iconCodePoint,
@@ -40,7 +79,7 @@ class Goal {
       id: id,
       name: name ?? this.name,
       targetAmount: targetAmount ?? this.targetAmount,
-      savedAmount: savedAmount ?? this.savedAmount,
+      contributions: contributions ?? this.contributions,
       deadline: deadline ?? this.deadline,
       colorHex: colorHex ?? this.colorHex,
       iconCodePoint: iconCodePoint ?? this.iconCodePoint,
@@ -51,7 +90,8 @@ class Goal {
         'id': id,
         'name': name,
         'targetAmount': targetAmount,
-        'savedAmount': savedAmount,
+        'contributions':
+            contributions.map((GoalContribution c) => c.toJson()).toList(),
         'deadline': deadline?.toIso8601String(),
         'colorHex': colorHex,
         'iconCodePoint': iconCodePoint,
@@ -61,7 +101,13 @@ class Goal {
         id: json['id'] as String,
         name: json['name'] as String? ?? '',
         targetAmount: (json['targetAmount'] as num?)?.toDouble() ?? 0,
-        savedAmount: (json['savedAmount'] as num?)?.toDouble() ?? 0,
+        contributions: (json['contributions'] is List)
+            ? (json['contributions'] as List<dynamic>)
+                .whereType<Map<dynamic, dynamic>>()
+                .map((Map<dynamic, dynamic> e) =>
+                    GoalContribution.fromJson(e.cast<String, dynamic>()))
+                .toList()
+            : <GoalContribution>[],
         deadline: json['deadline'] == null
             ? null
             : DateTime.parse(json['deadline'] as String),

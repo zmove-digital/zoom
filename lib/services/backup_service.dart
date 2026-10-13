@@ -40,25 +40,35 @@ class BackupService {
     return file;
   }
 
-  Future<void> shareBackup({String? email, String? pin}) async {
+  Future<void> shareBackup({
+    String? email,
+    String? pin,
+    String? destination,
+  }) async {
     final bool protect = pin != null && pin.isNotEmpty;
     final File file = await writeBackupFile(pin: pin);
-    final String subject = 'Backup ZOOM - ${DateTime.now().toIso8601String().substring(0, 10)}';
-    String body = email == null || email.isEmpty
-        ? 'Segue o backup dos meus dados do ZOOM. Guarde este arquivo em local seguro.'
-        : 'Segue o backup dos meus dados do ZOOM. Guarde este arquivo em local seguro.\n\nDica: envie para $email.';
+    final String subject =
+        'Backup ZOOM - ${DateTime.now().toIso8601String().substring(0, 10)}';
+    final StringBuffer body = StringBuffer(
+        'Segue o backup dos meus dados do ZOOM. Guarde este arquivo em local seguro.');
+    if (destination != null && destination.isNotEmpty) {
+      body.write('\n\nDestino escolhido: $destination.');
+    }
+    if (email != null && email.isNotEmpty) {
+      body.write('\n\nDica: envie para $email.');
+    }
     if (protect) {
-      body = '$body\n\nEste arquivo está protegido pelo PIN do app. '
-          'Para restaurar, informe o mesmo PIN.';
+      body.write('\n\nEste arquivo está protegido pelo PIN do app. '
+          'Para restaurar, informe o mesmo PIN.');
     }
     try {
       await Share.shareXFiles(
         <XFile>[XFile(file.path, mimeType: 'application/json')],
         subject: subject,
-        text: body,
+        text: body.toString(),
       );
     } catch (_) {
-      await Share.share(body, subject: subject);
+      await Share.share(body.toString(), subject: subject);
     }
   }
 

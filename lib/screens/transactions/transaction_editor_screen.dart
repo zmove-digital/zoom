@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/utils/formatters.dart';
 import '../../core/utils/id_generator.dart';
+import '../../data/models/account.dart';
 import '../../data/models/category.dart';
 import '../../data/models/transaction.dart';
 import '../../services/sound_service.dart';
@@ -30,6 +31,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
   late TransactionType _type;
   late DateTime _date;
   String? _categoryId;
+  String? _accountId;
   RecurrencePeriod? _repeat;
   bool? _paid;
 
@@ -42,6 +44,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     _type = e?.type ?? widget.initialType ?? TransactionType.expense;
     _date = e?.date ?? DateTime.now();
     _categoryId = e?.categoryId;
+    _accountId = e?.accountId;
     _repeat = e?.recurrence;
     _paid = e?.isPaid;
     if (e != null) {
@@ -210,12 +213,22 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
       );
       return;
     }
+    final List<Account> accounts = finance.accounts;
+    final String accountId =
+        _accountId ?? (accounts.isNotEmpty ? accounts.first.id : '');
+    if (accountId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Crie uma conta primeiro')),
+      );
+      return;
+    }
 
     final Transaction tx = Transaction(
       id: widget.existing?.id ?? newId(),
       type: _type,
       amount: value,
       categoryId: catId,
+      accountId: accountId,
       date: _date,
       description: _description.text.trim(),
       notes: _notes.text.trim(),
@@ -278,6 +291,10 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     final List<Category> cats = _categories(finance);
     if (_categoryId == null && cats.isNotEmpty) {
       _categoryId = cats.first.id;
+    }
+    final List<Account> accounts = finance.accounts;
+    if (_accountId == null && accounts.isNotEmpty) {
+      _accountId = accounts.first.id;
     }
 
     return Scaffold(
@@ -355,6 +372,29 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
                 )
                 .toList(),
             onChanged: (String? v) => setState(() => _categoryId = v),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            initialValue: _accountId,
+            decoration: const InputDecoration(
+              labelText: 'Conta',
+              prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+            ),
+            items: accounts
+                .map(
+                  (Account a) => DropdownMenuItem<String>(
+                    value: a.id,
+                    child: Row(
+                      children: <Widget>[
+                        Icon(a.icon, size: 18, color: a.color),
+                        const SizedBox(width: 8),
+                        Text(a.name),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (String? v) => setState(() => _accountId = v),
           ),
           const SizedBox(height: 16),
           TextField(

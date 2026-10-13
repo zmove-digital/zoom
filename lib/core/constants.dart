@@ -15,6 +15,7 @@ class SecurityRules {
 class DbKeys {
   static const String transactions = 'transactions';
   static const String categories = 'categories';
+  static const String accounts = 'accounts';
   static const String agenda = 'agenda';
   static const String reminders = 'reminders';
   static const String budgets = 'budgets';

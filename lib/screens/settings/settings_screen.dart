@@ -478,8 +478,10 @@ class _BackupSection extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.upload_file_outlined),
                 title: const Text('Enviar backup agora'),
+                isThreeLine: true,
                 subtitle: Text(
                   <String>[
+                    'E-mail, WhatsApp ou Google Drive',
                     last == null
                         ? 'Nunca enviado'
                         : 'Último: ${DateHelpers.dateTime.format(last)}',
@@ -487,9 +489,15 @@ class _BackupSection extends StatelessWidget {
                   ].join(' • '),
                 ),
                 onTap: () async {
+                  final String? destination =
+                      await _pickBackupDestination(context);
+                  if (destination == null) return;
                   await backup.shareBackup(
-                    email: settings.settings.backupEmail,
+                    email: destination == 'E-mail'
+                        ? settings.settings.backupEmail
+                        : null,
                     pin: protectBackup ? settings.settings.pin : null,
+                    destination: destination,
                   );
                   settings.markBackupDone();
                 },
@@ -549,6 +557,43 @@ class _BackupSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Future<String?> _pickBackupDestination(BuildContext context) {
+    return showModalBottomSheet<String>(
+      context: context,
+      builder: (BuildContext ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Enviar backup por',
+                    style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.mail_outline),
+              title: const Text('E-mail'),
+              onTap: () => Navigator.pop(ctx, 'E-mail'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat_outlined),
+              title: const Text('WhatsApp'),
+              onTap: () => Navigator.pop(ctx, 'WhatsApp'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.cloud_outlined),
+              title: const Text('Google Drive'),
+              onTap: () => Navigator.pop(ctx, 'Google Drive'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
   }
 
@@ -673,7 +718,7 @@ class _AboutSection extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 6),
                 Text(
-                  'Gestor financeiro pessoal, 100% offline. Seus dados ficam apenas no seu aparelho, com backup opcional por e-mail.',
+                  'Gestor financeiro pessoal, 100% offline. Seus dados ficam apenas no seu aparelho, com backup opcional por e-mail, WhatsApp ou Google Drive.',
                   style: theme.textTheme.bodySmall,
                 ),
               ],

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zoom/core/utils/formatters.dart';
+import 'package:zoom/data/models/account.dart';
 import 'package:zoom/data/models/agenda_entry.dart';
 import 'package:zoom/data/models/category.dart';
+import 'package:zoom/data/models/goal.dart';
 import 'package:zoom/data/models/transaction.dart';
 import 'package:zoom/services/backup_crypto.dart';
 
@@ -118,8 +120,49 @@ void main() {
     });
   });
 
-  group('AgendaEntry', () {
-    test('json roundtrip preserva mood e tags', () {
+  group('Account', () {
+    test('json roundtrip preserva tipo e saldo inicial', () {
+      final Account a = Account(
+        id: 'acc1',
+        name: 'Nubank',
+        type: AccountType.checking,
+        initialBalance: 250.75,
+      );
+      final Account restored = Account.fromJson(a.toJson());
+      expect(restored.id, 'acc1');
+      expect(restored.name, 'Nubank');
+      expect(restored.type, AccountType.checking);
+      expect(restored.initialBalance, 250.75);
+      expect(restored.colorHex, a.colorHex);
+    });
+
+    test('tipo desconhecido vira outros', () {
+      expect(accountTypeFromName('nada'), AccountType.other);
+    });
+  });
+
+  group('Goal', () {
+    test('savedAmount soma as contribuicoes', () {
+      final Goal g = Goal(
+        id: 'g1',
+        name: 'Viagem',
+        targetAmount: 1000,
+        contributions: <GoalContribution>[
+          GoalContribution(id: 'c1', accountId: 'a1', amount: 100),
+          GoalContribution(id: 'c2', accountId: 'a2', amount: 150),
+        ],
+      );
+      expect(g.savedAmount, 250);
+      expect(g.progress, 0.25);
+
+      final Goal restored = Goal.fromJson(g.toJson());
+      expect(restored.savedAmount, 250);
+      expect(restored.contributions.length, 2);
+      expect(restored.contributions.first.accountId, 'a1');
+    });
+  });
+
+  group('AgendaEntry', () {    test('json roundtrip preserva mood e tags', () {
       final AgendaEntry entry = AgendaEntry(
         id: 'e1',
         date: DateTime(2026, 5, 1),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/constants.dart';
 import '../core/utils/formatters.dart';
 import '../core/utils/id_generator.dart';
+import '../data/models/account.dart';
 import '../data/models/budget.dart';
 import '../data/models/category.dart';
 import '../data/models/goal.dart';
@@ -20,10 +21,16 @@ class FinanceController extends ChangeNotifier {
         _db.listOf(DbKeys.categories).map(Category.fromJson).toList();
     budgets = _db.listOf(DbKeys.budgets).map(Budget.fromJson).toList();
     goals = _db.listOf(DbKeys.goals).map(Goal.fromJson).toList();
+    accounts =
+        _db.listOf(DbKeys.accounts).map(Account.fromJson).toList();
 
     if (categories.isEmpty) {
       categories = SeedData.defaultCategories();
       _persistCategories();
+    }
+    if (accounts.isEmpty) {
+      accounts = SeedData.defaultAccounts();
+      _persistAccounts();
     }
   }
 
@@ -32,6 +39,7 @@ class FinanceController extends ChangeNotifier {
   late List<Category> categories;
   late List<Budget> budgets;
   late List<Goal> goals;
+  late List<Account> accounts;
 
   String get currencySymbol =>
       kCurrencySymbols['BRL'] ?? 'R\$';
@@ -99,16 +107,43 @@ class FinanceController extends ChangeNotifier {
     return total;
   }
 
-  double get totalBalance {
+  Account? accountById(String? id) {
+    if (id == null) return null;
+    for (final Account a in accounts) {
+      if (a.id == id) return a;
+    }
+    return null;
+  }
+
+  /// Saldo de uma conta: saldo inicial + lançamentos não futuros - valores
+  /// guardados nas metas com origem nesta conta.
+  double accountBalance(String id) {
+    final Account? a = accountById(id);
+    if (a == null) return 0;
     final DateTime now = DateTime.now();
     final DateTime endOfToday =
         DateTime(now.year, now.month, now.day, 23, 59, 59);
-    double total = 0;
+    double total = a.initialBalance;
     for (final Transaction t in transactions) {
+      if (t.accountId != id) continue;
       if (t.date.isAfter(endOfToday)) continue;
       total += t.signedAmount;
     }
-    return total - goalsSaved;
+    for (final Goal g in goals) {
+      for (final GoalContribution c in g.contributions) {
+        if (c.accountId == id) total -= c.amount;
+      }
+    }
+    return total;
+  }
+
+  /// Saldo total = soma dos saldos de todas as contas.
+  double get totalBalance {
+    double total = 0;
+    for (final Account a in accounts) {
+      total += accountBalance(a.id);
+    }
+    return total;
   }
 
   double get incomeThisMonth {
@@ -271,6 +306,7 @@ class FinanceController extends ChangeNotifier {
         type: base.type,
         amount: base.amount,
         categoryId: base.categoryId,
+        accountId: base.accountId,
         date: cursor,
         description: base.description,
         notes: base.notes,
@@ -373,16 +409,63 @@ class FinanceController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void contributeToGoal(String id, double amount) {
-    final int index = goals.indexWhere((Goal g) => g.id == id);
+  void addAccount(Account a) {
+    accounts.add(a);
+    _persistAccounts();
+    notifyListeners();
+  }
+
+  void updateAccount(Account a) {
+    final int index = accounts.indexWhere((Account e) => e.id == a.id);
     if (index >= 0) {
-      final Goal g = goals[index];
-      goals[index] = g.copyWith(
-        savedAmount: Money.round2(g.savedAmount + amount),
-      );
-      _persistGoals();
+      accounts[index] = a;
+      _persistAccounts();
       notifyListeners();
     }
+  }
+
+  /// Remove uma conta movendo seus lançamentos e metas para a primeira conta
+  /// restante. Não permite excluir a última conta.
+  void deleteAccount(String id) {
+    if (accounts.length <= 1) return;
+    accounts.removeWhere((Account a) => a.id == id);
+    final String fallback = accounts.first.id;
+    for (final Transaction t in transactions) {
+      if (t.accountId == id) t.accountId = fallback;
+    }
+    for (final Goal g in goals) {
+      g.contributions = g.contributions
+          .map((GoalContribution c) => c.accountId == id
+              ? GoalContribution(
+                  id: c.id,
+                  accountId: fallback,
+                  amount: c.amount,
+                  date: c.date,
+                )
+              : c)
+          .toList();
+    }
+    _persistTransactions();
+    _persistAccounts();
+    _persistGoals();
+    notifyListeners();
+  }
+
+  void contributeToGoal(String id, String accountId, double amount) {
+    final int index = goals.indexWhere((Goal g) => g.id == id);
+    if (index < 0) return;
+    final Goal g = goals[index];
+    g.contributions = <GoalContribution>[
+      ...g.contributions,
+      GoalContribution(
+        id: newId(),
+        accountId: accountId,
+        amount: Money.round2(amount),
+      ),
+    ];
+    goals[index] = g;
+    _persistGoals();
+    notifyListeners();
   }
 
   Map<String, double> totalsByCategory(
@@ -424,15 +507,18 @@ class FinanceController extends ChangeNotifier {
     required List<Category> categories,
     required List<Budget> budgets,
     required List<Goal> goals,
+    required List<Account> accounts,
   }) {
     this.transactions = transactions;
     this.categories = categories;
     this.budgets = budgets;
     this.goals = goals;
+    this.accounts = accounts;
     _persistTransactions();
     _persistCategories();
     _persistBudgets();
     _persistGoals();
+    _persistAccounts();
     notifyListeners();
   }
 
@@ -444,6 +530,8 @@ class FinanceController extends ChangeNotifier {
       _db.setList(DbKeys.budgets, budgets.map((Budget e) => e.toJson()).toList());
   void _persistGoals() =>
       _db.setList(DbKeys.goals, goals.map((Goal e) => e.toJson()).toList());
+  void _persistAccounts() =>
+      _db.setList(DbKeys.accounts, accounts.map((Account e) => e.toJson()).toList());
 
   void reload() {
     transactions =
@@ -452,9 +540,14 @@ class FinanceController extends ChangeNotifier {
         _db.listOf(DbKeys.categories).map(Category.fromJson).toList();
     budgets = _db.listOf(DbKeys.budgets).map(Budget.fromJson).toList();
     goals = _db.listOf(DbKeys.goals).map(Goal.fromJson).toList();
+    accounts = _db.listOf(DbKeys.accounts).map(Account.fromJson).toList();
     if (categories.isEmpty) {
       categories = SeedData.defaultCategories();
       _persistCategories();
+    }
+    if (accounts.isEmpty) {
+      accounts = SeedData.defaultAccounts();
+      _persistAccounts();
     }
     notifyListeners();
   }

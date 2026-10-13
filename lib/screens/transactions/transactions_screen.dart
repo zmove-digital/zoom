@@ -158,6 +158,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     transaction: t,
                     category: finance.categoryById(t.categoryId),
                     currencySymbol: sym,
+                    accountName: finance.accountById(t.accountId)?.name,
                     onTap: () {
                       Navigator.of(context).push(MaterialPageRoute<void>(
                         builder: (_) => TransactionEditorScreen(existing: t),
