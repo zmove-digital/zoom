@@ -91,6 +91,14 @@ class FinanceController extends ChangeNotifier {
     return total;
   }
 
+  double get goalsSaved {
+    double total = 0;
+    for (final Goal g in goals) {
+      total += g.savedAmount;
+    }
+    return total;
+  }
+
   double get totalBalance {
     final DateTime now = DateTime.now();
     final DateTime endOfToday =
@@ -100,7 +108,7 @@ class FinanceController extends ChangeNotifier {
       if (t.date.isAfter(endOfToday)) continue;
       total += t.signedAmount;
     }
-    return total;
+    return total - goalsSaved;
   }
 
   double get incomeThisMonth {
