@@ -9,6 +9,7 @@ import '../../data/models/transaction.dart';
 import '../../services/sound_service.dart';
 import '../../state/finance_controller.dart';
 import '../../state/settings_controller.dart';
+import '../../widgets/recurrence_scope_dialog.dart';
 
 class TransactionEditorScreen extends StatefulWidget {
   const TransactionEditorScreen({this.existing, this.initialType, super.key});
@@ -29,6 +30,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
   late TransactionType _type;
   late DateTime _date;
   String? _categoryId;
+  RecurrencePeriod? _repeat;
 
   bool get _isEditing => widget.existing != null;
 
@@ -39,6 +41,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     _type = e?.type ?? widget.initialType ?? TransactionType.expense;
     _date = e?.date ?? DateTime.now();
     _categoryId = e?.categoryId;
+    _repeat = e?.recurrence;
     if (e != null) {
       _amount.text = e.amount.toStringAsFixed(2).replaceAll('.', ',');
       _description.text = e.description;
@@ -75,6 +78,49 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     }
   }
 
+  Widget _repeatSelector(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.repeat, size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 6),
+              Text(
+                'REPETIR',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: <Widget>[
+            ChoiceChip(
+              label: const Text('Nenhuma'),
+              selected: _repeat == null,
+              onSelected: (_) => setState(() => _repeat = null),
+            ),
+            ...RecurrencePeriod.values.map(
+              (RecurrencePeriod p) => ChoiceChip(
+                label: Text(p.label),
+                selected: _repeat == p,
+                onSelected: (_) => setState(() => _repeat = p),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Future<void> _save() async {
     final FinanceController finance = context.read<FinanceController>();
     final SoundService sound = context.read<SoundService>();
@@ -107,10 +153,25 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
       createdAt: widget.existing?.createdAt,
     );
 
-    if (_isEditing) {
-      finance.updateTransaction(tx);
+    if (!_isEditing) {
+      finance.addTransaction(tx, repeat: _repeat);
     } else {
-      finance.addTransaction(tx);
+      final Transaction original = widget.existing!;
+      if (original.recurrenceId == null) {
+        if (_repeat == null) {
+          finance.updateTransaction(tx);
+        } else {
+          finance.makeRecurringFrom(tx, _repeat!);
+        }
+      } else {
+        final RecurrenceScope? scope = await showEditScopeDialog(context);
+        if (scope == null) return;
+        finance.updateTransactionSeries(
+          tx,
+          includeFuture: scope == RecurrenceScope.thisAndFuture,
+          repeat: _repeat,
+        );
+      }
     }
 
     await sound.playTap(
@@ -122,11 +183,21 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
-  void _delete() {
+  Future<void> _delete() async {
     final FinanceController finance = context.read<FinanceController>();
-    if (widget.existing == null) return;
-    finance.deleteTransaction(widget.existing!.id);
-    Navigator.of(context).pop();
+    final Transaction? original = widget.existing;
+    if (original == null) return;
+    if (original.recurrenceId == null) {
+      finance.deleteTransaction(original.id);
+    } else {
+      final RecurrenceScope? scope = await showDeleteScopeDialog(context);
+      if (scope == null) return;
+      finance.deleteTransactionSeries(
+        original.id,
+        includeFuture: scope == RecurrenceScope.thisAndFuture,
+      );
+    }
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -239,6 +310,8 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
             trailing: const Icon(Icons.chevron_right),
             onTap: _pickDate,
           ),
+          const SizedBox(height: 16),
+          _repeatSelector(theme),
           const SizedBox(height: 16),
           TextField(
             controller: _notes,

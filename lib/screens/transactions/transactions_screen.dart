@@ -8,6 +8,7 @@ import '../../state/finance_controller.dart';
 import '../../state/settings_controller.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/recurrence_scope_dialog.dart';
 import '../../widgets/section_card.dart';
 import '../../widgets/transaction_tile.dart';
 import 'transaction_editor_screen.dart';
@@ -150,7 +151,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                 TransactionEditorScreen(existing: t),
                           ));
                         },
-                        onLongPress: () => _confirmDelete(t.id),
+                        onLongPress: () => _confirmDelete(t),
                       );
                     },
                   ),
@@ -245,8 +246,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  Future<void> _confirmDelete(String id) async {
+  Future<void> _confirmDelete(Transaction t) async {
     final FinanceController finance = context.read<FinanceController>();
+    if (t.recurrenceId != null) {
+      final RecurrenceScope? scope = await showDeleteScopeDialog(context);
+      if (scope == null) return;
+      finance.deleteTransactionSeries(
+        t.id,
+        includeFuture: scope == RecurrenceScope.thisAndFuture,
+      );
+      return;
+    }
     final bool? ok = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
@@ -265,7 +275,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
     );
     if (ok == true) {
-      finance.deleteTransaction(id);
+      finance.deleteTransaction(t.id);
     }
   }
 }

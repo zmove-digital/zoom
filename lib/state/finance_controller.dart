@@ -115,8 +115,20 @@ class FinanceController extends ChangeNotifier {
     );
   }
 
-  void addTransaction(Transaction t) {
-    transactions.add(t);
+  static const int recurrenceHorizonMonths = 24;
+
+  void addTransaction(Transaction t, {RecurrencePeriod? repeat}) {
+    if (repeat == null) {
+      transactions.add(t);
+    } else {
+      final String groupId = newId();
+      t.recurrenceId = groupId;
+      t.recurrence = repeat;
+      transactions.add(t);
+      transactions.addAll(
+        _buildOccurrences(t, repeat, groupId, _recurrenceEnd(t.date)),
+      );
+    }
     _persistTransactions();
     notifyListeners();
   }
@@ -134,6 +146,115 @@ class FinanceController extends ChangeNotifier {
     transactions.removeWhere((Transaction t) => t.id == id);
     _persistTransactions();
     notifyListeners();
+  }
+
+  void makeRecurringFrom(Transaction anchor, RecurrencePeriod repeat) {
+    final int index =
+        transactions.indexWhere((Transaction e) => e.id == anchor.id);
+    if (index < 0) return;
+    final String groupId = newId();
+    anchor.recurrenceId = groupId;
+    anchor.recurrence = repeat;
+    transactions[index] = anchor;
+    transactions.addAll(
+      _buildOccurrences(anchor, repeat, groupId, _recurrenceEnd(anchor.date)),
+    );
+    _persistTransactions();
+    notifyListeners();
+  }
+
+  void updateTransactionSeries(
+    Transaction anchor, {
+    required bool includeFuture,
+    RecurrencePeriod? repeat,
+  }) {
+    final int index =
+        transactions.indexWhere((Transaction e) => e.id == anchor.id);
+    if (index < 0) return;
+    final Transaction original = transactions[index];
+    final String? groupId = original.recurrenceId;
+
+    if (!includeFuture || groupId == null) {
+      anchor.recurrenceId = original.recurrenceId;
+      anchor.recurrence = original.recurrence;
+      transactions[index] = anchor;
+      _persistTransactions();
+      notifyListeners();
+      return;
+    }
+
+    transactions.removeWhere((Transaction e) =>
+        e.recurrenceId == groupId &&
+        e.id != anchor.id &&
+        e.date.isAfter(anchor.date));
+
+    if (repeat == null) {
+      for (final Transaction e in transactions) {
+        if (e.recurrenceId == groupId) {
+          e.recurrenceId = null;
+          e.recurrence = null;
+        }
+      }
+      anchor.recurrenceId = null;
+      anchor.recurrence = null;
+    } else {
+      anchor.recurrenceId = groupId;
+      anchor.recurrence = repeat;
+    }
+    final int anchorIndex =
+        transactions.indexWhere((Transaction e) => e.id == anchor.id);
+    transactions[anchorIndex] = anchor;
+    if (repeat != null) {
+      transactions.addAll(
+        _buildOccurrences(anchor, repeat, groupId, _recurrenceEnd(anchor.date)),
+      );
+    }
+    _persistTransactions();
+    notifyListeners();
+  }
+
+  void deleteTransactionSeries(String id, {required bool includeFuture}) {
+    final int index = transactions.indexWhere((Transaction e) => e.id == id);
+    if (index < 0) return;
+    final Transaction t = transactions[index];
+    if (!includeFuture || t.recurrenceId == null) {
+      transactions.removeAt(index);
+    } else {
+      transactions.removeWhere((Transaction e) =>
+          e.recurrenceId == t.recurrenceId && !e.date.isBefore(t.date));
+    }
+    _persistTransactions();
+    notifyListeners();
+  }
+
+  DateTime _recurrenceEnd(DateTime start) =>
+      addMonths(start, recurrenceHorizonMonths);
+
+  List<Transaction> _buildOccurrences(
+    Transaction base,
+    RecurrencePeriod period,
+    String groupId,
+    DateTime end,
+  ) {
+    final List<Transaction> list = <Transaction>[];
+    DateTime cursor = base.date;
+    while (true) {
+      cursor = period.next(cursor);
+      if (cursor.isAfter(end)) break;
+      list.add(Transaction(
+        id: newId(),
+        type: base.type,
+        amount: base.amount,
+        categoryId: base.categoryId,
+        date: cursor,
+        description: base.description,
+        notes: base.notes,
+        isPaid: base.isPaid,
+        recurrenceId: groupId,
+        recurrence: period,
+      ));
+    }
+    return list;
   }
 
   void addCategory(Category c) {

@@ -64,6 +64,37 @@ void main() {
     });
   });
 
+  group('Recurrence', () {
+    test('addMonths faz clamp no fim do mês e vira o ano', () {
+      expect(addMonths(DateTime(2026, 1, 31), 1), DateTime(2026, 2, 28));
+      expect(addMonths(DateTime(2026, 12, 15), 1), DateTime(2027, 1, 15));
+      expect(addMonths(DateTime(2026, 3, 31), 1), DateTime(2026, 4, 30));
+    });
+
+    test('next respeita o período', () {
+      final DateTime d = DateTime(2026, 5, 10);
+      expect(RecurrencePeriod.weekly.next(d), DateTime(2026, 5, 17));
+      expect(RecurrencePeriod.biweekly.next(d), DateTime(2026, 5, 24));
+      expect(RecurrencePeriod.monthly.next(d), DateTime(2026, 6, 10));
+    });
+
+    test('json roundtrip preserva a recorrência', () {
+      final Transaction tx = Transaction(
+        id: 'r1',
+        type: TransactionType.expense,
+        amount: 30,
+        categoryId: 'c',
+        date: DateTime(2026, 5, 10),
+        recurrenceId: 'grp',
+        recurrence: RecurrencePeriod.monthly,
+      );
+      final Transaction restored = Transaction.fromJson(tx.toJson());
+      expect(restored.recurrenceId, 'grp');
+      expect(restored.recurrence, RecurrencePeriod.monthly);
+      expect(restored.isRecurring, isTrue);
+    });
+  });
+
   group('Category', () {
     test('kind parsing tolera valores desconhecidos', () {
       expect(categoryKindFromName('income'), CategoryKind.income);

@@ -42,10 +42,28 @@ class TransactionTile extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
-      subtitle: Text(
-        '${category?.name ?? 'Sem categoria'} • ${DateHelpers.full.format(transaction.date)}',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      subtitle: Row(
+        children: <Widget>[
+          Flexible(
+            child: Text(
+              '${category?.name ?? 'Sem categoria'} • ${DateHelpers.full.format(transaction.date)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (transaction.isRecurring) ...<Widget>[
+            const SizedBox(width: 6),
+            Icon(Icons.repeat, size: 14, color: theme.colorScheme.primary),
+            const SizedBox(width: 2),
+            Text(
+              transaction.recurrence!.label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
       ),
       trailing: Text(
         '${isIncome ? '+' : '-'} ${Money.format(transaction.amount.abs(), '', symbol: currencySymbol)}',
