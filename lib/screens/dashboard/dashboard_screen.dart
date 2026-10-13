@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/constants.dart';
 import '../../core/utils/formatters.dart';
 import '../../data/models/budget.dart';
 import '../../data/models/category.dart';
@@ -84,6 +85,8 @@ class DashboardScreen extends StatelessWidget {
               currencySymbol: sym,
             ),
             const SizedBox(height: 16),
+            _primaryAction(context),
+            const SizedBox(height: 16),
             Row(
               children: <Widget>[
                 Expanded(
@@ -120,6 +123,73 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 20),
             _recentTransactions(context, finance, sym, theme),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _primaryAction(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    const Color onHero = Color(0xFFFFFFFF);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () {
+          Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const TransactionEditorScreen()));
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: kHeroGradient,
+            ),
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: kHeroGradient.last.withValues(alpha: 0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 46,
+                height: 46,
+                decoration: const BoxDecoration(
+                  color: Color(0x33FFFFFF),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add_rounded, color: onHero, size: 28),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Novo lançamento',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: onHero,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'Registre uma entrada ou saída',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: onHero.withValues(alpha: 0.85)),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: onHero),
+            ],
+          ),
         ),
       ),
     );

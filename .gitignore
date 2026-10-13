@@ -5,6 +5,7 @@ build/
 .flutter-plugins-dependencies
 .idea/
 .vscode/
+android/.kotlin/
 *.iml
 .DS_Store
 android/key.properties
