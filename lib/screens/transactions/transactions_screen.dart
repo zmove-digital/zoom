@@ -148,7 +148,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             )
           else
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(8, 0, 8, widget.embedded ? 100 : 24),
+              padding: EdgeInsets.fromLTRB(
+                8,
+                0,
+                8,
+                widget.embedded
+                    ? 100
+                    : MediaQuery.of(context).padding.bottom + 96,
+              ),
               sliver: SliverList.separated(
                 itemCount: list.length,
                 separatorBuilder: (_, __) => const Divider(height: 1),

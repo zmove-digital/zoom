@@ -549,13 +549,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         style: theme.textTheme.bodySmall),
                   ),
                   Expanded(
-                    child: Text(
-                      t.description.trim().isEmpty
-                          ? g.category.name
-                          : t.description,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall,
+                    child: Row(
+                      children: <Widget>[
+                        if (!t.isSettled) ...<Widget>[
+                          Icon(Icons.schedule,
+                              size: 12, color: theme.colorScheme.outline),
+                          const SizedBox(width: 4),
+                        ],
+                        Expanded(
+                          child: Text(
+                            t.description.trim().isEmpty
+                                ? g.category.name
+                                : t.description,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: t.isSettled
+                                  ? null
+                                  : theme.colorScheme.outline,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   Text(

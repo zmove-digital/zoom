@@ -167,9 +167,12 @@ class PdfReportService {
                         style: const pw.TextStyle(fontSize: 10))),
                 pw.Expanded(
                   child: pw.Text(
-                    t.description.trim().isEmpty
-                        ? g.category.name
-                        : t.description,
+                    <String>[
+                      t.description.trim().isEmpty
+                          ? g.category.name
+                          : t.description,
+                      if (!t.isSettled) '(pendente)',
+                    ].join(' '),
                     style: const pw.TextStyle(fontSize: 10),
                   ),
                 ),

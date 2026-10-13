@@ -147,70 +147,16 @@ class GoalsScreen extends StatelessWidget {
       );
       return;
     }
-    final TextEditingController controller = TextEditingController();
-    String accountId = accounts.first.id;
-    final double? value = await showDialog<double>(
+    final (double, String)? result = await showDialog<(double, String)>(
       context: context,
-      builder: (BuildContext ctx) => StatefulBuilder(
-        builder: (BuildContext ctx, StateSetter setLocal) => AlertDialog(
-          title: Text('Guardar em "${goal.name}"'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextField(
-                controller: controller,
-                autofocus: true,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration:
-                    InputDecoration(labelText: 'Valor', prefixText: '$sym '),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: accountId,
-                decoration: const InputDecoration(
-                  labelText: 'Conta de origem',
-                  prefixIcon: Icon(Icons.account_balance_wallet_outlined),
-                ),
-                items: accounts
-                    .map(
-                      (Account a) => DropdownMenuItem<String>(
-                        value: a.id,
-                        child: Row(
-                          children: <Widget>[
-                            Icon(a.icon, size: 18, color: a.color),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(a.name,
-                                  overflow: TextOverflow.ellipsis),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (String? v) {
-                  if (v != null) setLocal(() => accountId = v);
-                },
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.pop(ctx, Money.parse(controller.text)),
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
+      builder: (BuildContext ctx) => _ContributeDialog(
+        goal: goal,
+        accounts: accounts,
+        sym: sym,
       ),
     );
-    if (value != null && value > 0 && context.mounted) {
-      finance.contributeToGoal(goal.id, accountId, value);
+    if (result != null && result.$1 > 0 && context.mounted) {
+      finance.contributeToGoal(goal.id, result.$2, result.$1);
     }
   }
 
@@ -224,6 +170,104 @@ class GoalsScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (_) => _GoalEditor(goal: goal),
+    );
+  }
+}
+
+class _ContributeDialog extends StatefulWidget {
+  const _ContributeDialog({
+    required this.goal,
+    required this.accounts,
+    required this.sym,
+  });
+
+  final Goal goal;
+  final List<Account> accounts;
+  final String sym;
+
+  @override
+  State<_ContributeDialog> createState() => _ContributeDialogState();
+}
+
+class _ContributeDialogState extends State<_ContributeDialog> {
+  final TextEditingController _amount = TextEditingController();
+  final FocusNode _amountFocus = FocusNode();
+  late String _accountId = widget.accounts.first.id;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _amountFocus.requestFocus());
+  }
+
+  @override
+  void dispose() {
+    _amount.dispose();
+    _amountFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Guardar em "${widget.goal.name}"'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          TextField(
+            controller: _amount,
+            focusNode: _amountFocus,
+            autofocus: true,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+                labelText: 'Valor', prefixText: '${widget.sym} '),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: _accountId,
+            decoration: const InputDecoration(
+              labelText: 'Conta de origem',
+              prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+            ),
+            items: widget.accounts
+                .map(
+                  (Account a) => DropdownMenuItem<String>(
+                    value: a.id,
+                    child: Row(
+                      children: <Widget>[
+                        Icon(a.icon, size: 18, color: a.color),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child:
+                              Text(a.name, overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: (String? v) {
+              if (v != null) {
+                setState(() => _accountId = v);
+                _amountFocus.requestFocus();
+              }
+            },
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () =>
+              Navigator.pop(context, (Money.parse(_amount.text), _accountId)),
+          child: const Text('Guardar'),
+        ),
+      ],
     );
   }
 }
