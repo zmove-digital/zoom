@@ -81,13 +81,14 @@ class Transaction {
 
   bool get isRecurring => recurrenceId != null && recurrence != null;
 
-  bool get isSettled {
-    if (isPaid != null) return isPaid!;
+  bool get isFuture {
     final DateTime now = DateTime.now();
-    final DateTime endOfToday =
-        DateTime(now.year, now.month, now.day, 23, 59, 59);
-    return !date.isAfter(endOfToday);
+    return date.isAfter(DateTime(now.year, now.month, now.day, 23, 59, 59));
   }
+
+  /// Efetivado somente quando a data é hoje ou passada e não foi marcado
+  /// manualmente como pendente. Lançamentos futuros nunca são efetivados.
+  bool get isSettled => !isFuture && isPaid != false;
 
   double get signedAmount =>
       type == TransactionType.income ? amount : -amount;

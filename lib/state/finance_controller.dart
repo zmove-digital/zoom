@@ -160,6 +160,19 @@ class FinanceController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Efetiva um lançamento futuro: move a data para hoje e marca como efetivado.
+  void settleTransaction(String id) {
+    final int index = transactions.indexWhere((Transaction t) => t.id == id);
+    if (index < 0) return;
+    final DateTime now = DateTime.now();
+    final Transaction t = transactions[index];
+    t.date = DateTime(now.year, now.month, now.day, t.date.hour, t.date.minute);
+    t.isPaid = null;
+    transactions[index] = t;
+    _persistTransactions();
+    notifyListeners();
+  }
+
   void makeRecurringFrom(Transaction anchor, RecurrencePeriod repeat) {
     final int index =
         transactions.indexWhere((Transaction e) => e.id == anchor.id);

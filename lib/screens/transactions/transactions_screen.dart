@@ -159,6 +159,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       ));
                     },
                     onLongPress: () => _confirmDelete(t),
+                    onSettle: () => finance.settleTransaction(t.id),
                   );
                 },
               ),

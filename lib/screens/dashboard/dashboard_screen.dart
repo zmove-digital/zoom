@@ -545,6 +545,7 @@ class DashboardScreen extends StatelessWidget {
                           builder: (_) => TransactionEditorScreen(existing: t),
                         ));
                       },
+                      onSettle: () => finance.settleTransaction(t.id),
                     ),
                   )
                   .toList(),

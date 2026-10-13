@@ -123,61 +123,69 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     );
   }
 
-  Widget _statusSelector(ThemeData theme) {
+  Widget _sectionLabel(ThemeData theme, IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _settlementSection(ThemeData theme) {
     final bool income = _type == TransactionType.income;
     final String doneLabel = income ? 'Recebido' : 'Pago';
     final String pendingLabel = income ? 'A receber' : 'A pagar';
+    final DateTime now = DateTime.now();
+    final bool isFuture =
+        _date.isAfter(DateTime(now.year, now.month, now.day, 23, 59, 59));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Row(
-            children: <Widget>[
-              Icon(Icons.check_circle_outline,
-                  size: 18, color: theme.colorScheme.primary),
-              const SizedBox(width: 6),
-              Text(
-                'EFETIVAÇÃO',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: <Widget>[
-            ChoiceChip(
-              label: const Text('Automático'),
-              selected: _paid == null,
-              onSelected: (_) => setState(() => _paid = null),
-            ),
-            ChoiceChip(
-              label: Text(doneLabel),
-              selected: _paid == true,
-              onSelected: (_) => setState(() => _paid = true),
-            ),
-            ChoiceChip(
-              label: Text(pendingLabel),
-              selected: _paid == false,
-              onSelected: (_) => setState(() => _paid = false),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: Text(
-            'Automático usa a data: passado conta como $doneLabel, futuro como $pendingLabel.',
+        _sectionLabel(theme, Icons.check_circle_outline, 'EFETIVAÇÃO'),
+        if (isFuture) ...<Widget>[
+          Text(
+            'Data futura: por enquanto consta como "$pendingLabel". '
+            'Efetivar move a data para hoje.',
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.outline),
           ),
-        ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => setState(() {
+              final DateTime n = DateTime.now();
+              _date =
+                  DateTime(n.year, n.month, n.day, _date.hour, _date.minute);
+              _paid = null;
+            }),
+            icon: const Icon(Icons.check_circle_outline),
+            label: const Text('Efetivar agora'),
+          ),
+        ] else ...<Widget>[
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _paid != false,
+            onChanged: (bool v) => setState(() => _paid = v ? null : false),
+            title: Text(doneLabel),
+            subtitle: Text(
+              _paid != false
+                  ? 'Conta como efetivado'
+                  : 'Marcado como $pendingLabel',
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -373,7 +381,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
             onTap: _pickDate,
           ),
           const SizedBox(height: 16),
-          _statusSelector(theme),
+          _settlementSection(theme),
           const SizedBox(height: 16),
           _repeatSelector(theme),
           const SizedBox(height: 16),

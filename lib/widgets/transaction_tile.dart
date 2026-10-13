@@ -12,6 +12,7 @@ class TransactionTile extends StatelessWidget {
     required this.currencySymbol,
     this.onTap,
     this.onLongPress,
+    this.onSettle,
     super.key,
   });
 
@@ -20,6 +21,7 @@ class TransactionTile extends StatelessWidget {
   final String currencySymbol;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
+  final VoidCallback? onSettle;
 
   @override
   Widget build(BuildContext context) {
@@ -79,33 +81,57 @@ class TransactionTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(
-                settled
-                    ? Icons.check_circle
-                    : Icons.schedule,
-                size: 13,
-                color: settled
-                    ? const Color(0xFF06D6A0)
-                    : const Color(0xFFF4A261),
+          if (!settled && onSettle != null)
+            InkWell(
+              onTap: onSettle,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Icon(Icons.check_circle_outline,
+                        size: 13, color: Color(0xFFF4A261)),
+                    const SizedBox(width: 3),
+                    Text(
+                      'Efetivar',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: const Color(0xFFF4A261),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 3),
-              Text(
-                settled
-                    ? 'Efetivado'
-                    : (isIncome ? 'A receber' : 'A pagar'),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 11,
+            )
+          else
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  settled ? Icons.check_circle : Icons.schedule,
+                  size: 13,
                   color: settled
                       ? const Color(0xFF06D6A0)
                       : const Color(0xFFF4A261),
-                  fontWeight: FontWeight.w600,
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 3),
+                Text(
+                  settled
+                      ? 'Efetivado'
+                      : (isIncome ? 'A receber' : 'A pagar'),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    color: settled
+                        ? const Color(0xFF06D6A0)
+                        : const Color(0xFFF4A261),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
