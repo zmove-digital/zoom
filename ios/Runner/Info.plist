@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>O ZOOM usa a câmera para você fotografar e usar a imagem como fundo do app.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O ZOOM acessa suas fotos para você escolher uma imagem de fundo do app.</string>
 </dict>
 </plist>
