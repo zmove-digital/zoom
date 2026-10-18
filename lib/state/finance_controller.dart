@@ -109,6 +109,11 @@ class FinanceController extends ChangeNotifier {
     return total;
   }
 
+  /// Total guardado em metas dentro do período (para descontar no saldo do
+  /// extrato, do mesmo jeito que [accountBalance] já desconta por conta).
+  double goalContributionsBetween(DateTime from, DateTime to) =>
+      Goal.contributionsBetween(goals, from, to);
+
   Account? accountById(String? id) {
     if (id == null) return null;
     for (final Account a in accounts) {

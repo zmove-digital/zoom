@@ -220,6 +220,57 @@ void main() {
       expect(restored.contributions.length, 2);
       expect(restored.contributions.first.accountId, 'a1');
     });
+
+    test('contributionsBetween soma apenas o período informado', () {
+      final Goal viajem = Goal(
+        id: 'g1',
+        name: 'Viagem',
+        targetAmount: 1000,
+        contributions: <GoalContribution>[
+          GoalContribution(
+            id: 'c1',
+            accountId: 'a1',
+            amount: 100,
+            date: DateTime(2026, 5, 1),
+          ),
+          GoalContribution(
+            id: 'c2',
+            accountId: 'a1',
+            amount: 200,
+            date: DateTime(2026, 6, 1),
+          ),
+        ],
+      );
+      final Goal celular = Goal(
+        id: 'g2',
+        name: 'Celular',
+        targetAmount: 900,
+        contributions: <GoalContribution>[
+          GoalContribution(
+            id: 'c3',
+            accountId: 'a2',
+            amount: 50,
+            date: DateTime(2026, 5, 31, 23, 59),
+          ),
+        ],
+      );
+      final List<Goal> goals = <Goal>[viajem, celular];
+      expect(
+        Goal.contributionsBetween(
+            goals, DateTime(2026, 5, 1), DateTime(2026, 5, 31)),
+        150,
+      );
+      expect(
+        Goal.contributionsBetween(
+            goals, DateTime(2026, 6, 1), DateTime(2026, 6, 30)),
+        200,
+      );
+      expect(
+        Goal.contributionsBetween(
+            goals, DateTime(2026, 1, 1), DateTime(2026, 12, 31)),
+        350,
+      );
+    });
   });
 
   group('AgendaEntry', () {    test('json roundtrip preserva mood e tags', () {

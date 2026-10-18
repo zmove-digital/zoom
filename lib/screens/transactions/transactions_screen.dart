@@ -73,6 +73,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     for (final Transaction t in list) {
       if (t.isSettled) settledBalance += t.signedAmount;
     }
+    // O que foi guardado em metas no mês também sai do saldo livre.
+    settledBalance -= finance.goalContributionsBetween(from, to);
 
     final int overdueCount =
         list.where((Transaction t) => t.isOverdue).length;

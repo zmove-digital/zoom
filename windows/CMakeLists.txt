@@ -32,6 +32,12 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# O MSVC 14.5x (Visual Studio 2026) transformou em erro a deprecacao de
+# <experimental/coroutine> (/await), usada por plugins C++/WinRT
+# (audioplayers_windows, local_auth_windows). O define abaixo mantem o build
+# funcionando enquanto o plugin nao migra para o <coroutine> do C++20.
+add_compile_definitions(_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by

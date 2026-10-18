@@ -67,6 +67,25 @@ class Goal {
       : (savedAmount / targetAmount).clamp(0.0, 1.0).toDouble();
   bool get isDone => savedAmount >= targetAmount && targetAmount > 0;
 
+  /// Soma das contribuições de todas as metas dentro do período informado.
+  /// Usado para descontar, no saldo do extrato, o dinheiro que saiu para a meta.
+  static double contributionsBetween(
+    Iterable<Goal> goals,
+    DateTime from,
+    DateTime to,
+  ) {
+    final DateTime start = DateTime(from.year, from.month, from.day);
+    final DateTime end = DateTime(to.year, to.month, to.day, 23, 59, 59);
+    double total = 0;
+    for (final Goal g in goals) {
+      for (final GoalContribution c in g.contributions) {
+        if (c.date.isBefore(start) || c.date.isAfter(end)) continue;
+        total += c.amount;
+      }
+    }
+    return total;
+  }
+
   Goal copyWith({
     String? name,
     double? targetAmount,
