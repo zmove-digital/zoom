@@ -28,10 +28,12 @@ class TransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final Color errorColor = theme.colorScheme.error;
     final bool isIncome = transaction.type == TransactionType.income;
     final bool settled = transaction.isSettled;
+    final bool overdue = transaction.isOverdue;
     final Color amountColor =
-        isIncome ? const Color(0xFF06D6A0) : theme.colorScheme.error;
+        overdue ? errorColor : (isIncome ? const Color(0xFF06D6A0) : errorColor);
     final String title = transaction.description.trim().isEmpty
         ? (category?.name ?? 'Sem categoria')
         : transaction.description;
@@ -45,7 +47,10 @@ class TransactionTile extends StatelessWidget {
         title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+        style: theme.textTheme.bodyLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: overdue ? errorColor : null,
+        ),
       ),
       subtitle: Row(
         children: <Widget>[
@@ -54,8 +59,30 @@ class TransactionTile extends StatelessWidget {
               '${category?.name ?? 'Sem categoria'}${accountName != null ? ' • $accountName' : ''} • ${DateHelpers.full.format(transaction.date)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              style: overdue
+                  ? theme.textTheme.bodyMedium?.copyWith(color: errorColor)
+                  : null,
             ),
           ),
+          if (overdue) ...<Widget>[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: errorColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'VENCIDO',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontSize: 10,
+                  color: errorColor,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
           if (transaction.isRecurring) ...<Widget>[
             const SizedBox(width: 6),
             Icon(Icons.repeat, size: 14, color: theme.colorScheme.primary),
@@ -93,14 +120,17 @@ class TransactionTile extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const Icon(Icons.check_circle_outline,
-                        size: 13, color: Color(0xFFF4A261)),
+                    Icon(Icons.check_circle_outline,
+                        size: 13,
+                        color:
+                            overdue ? errorColor : const Color(0xFFF4A261)),
                     const SizedBox(width: 3),
                     Text(
                       'Efetivar',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 11,
-                        color: const Color(0xFFF4A261),
+                        color:
+                            overdue ? errorColor : const Color(0xFFF4A261),
                         fontWeight: FontWeight.w700,
                       ),
                     ),

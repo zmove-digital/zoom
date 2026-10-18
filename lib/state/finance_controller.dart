@@ -32,6 +32,8 @@ class FinanceController extends ChangeNotifier {
       accounts = SeedData.defaultAccounts();
       _persistAccounts();
     }
+
+    _migrateLegacySettlement();
   }
 
   final LocalDatabase _db;
@@ -195,17 +197,46 @@ class FinanceController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Efetiva um lançamento futuro: move a data para hoje e marca como efetivado.
+  /// Efetiva um lançamento. Se a data ainda for futura, move para hoje;
+  /// lançamentos vencidos mantêm a data original. Marca como efetivado.
   void settleTransaction(String id) {
     final int index = transactions.indexWhere((Transaction t) => t.id == id);
     if (index < 0) return;
     final DateTime now = DateTime.now();
     final Transaction t = transactions[index];
-    t.date = DateTime(now.year, now.month, now.day, t.date.hour, t.date.minute);
-    t.isPaid = null;
+    if (t.isFuture) {
+      t.date = DateTime(now.year, now.month, now.day, t.date.hour, t.date.minute);
+    }
+    t.isPaid = true;
     transactions[index] = t;
     _persistTransactions();
     notifyListeners();
+  }
+
+  /// Lançamentos vencidos (data passada e ainda não efetivados), do mais
+  /// antigo para o mais recente.
+  List<Transaction> get overdueTransactions {
+    final List<Transaction> list =
+        transactions.where((Transaction t) => t.isOverdue).toList()
+          ..sort((Transaction a, Transaction b) =>
+              a.date.compareTo(b.date));
+    return list;
+  }
+
+  /// Migração de dados legados: antes a efetivação era automática pela data,
+  /// então lançamentos antigos (`isPaid == null`) cuja data já chegou (hoje ou
+  /// antes) permanecem efetivados — não viram "vencidos" por causa da mudança
+  /// para efetivação manual. É idempotente: lançamentos novos sempre têm
+  /// `isPaid` definido (true/false), então nunca são tocados.
+  void _migrateLegacySettlement() {
+    bool changed = false;
+    for (final Transaction t in transactions) {
+      if (t.isPaid == null && !t.isFuture) {
+        t.isPaid = true;
+        changed = true;
+      }
+    }
+    if (changed) _persistTransactions();
   }
 
   void makeRecurringFrom(Transaction anchor, RecurrencePeriod repeat) {
@@ -310,7 +341,8 @@ class FinanceController extends ChangeNotifier {
         date: cursor,
         description: base.description,
         notes: base.notes,
-        isPaid: base.isPaid,
+        // Ocorrências futuras nascem pendentes: a efetivação é manual.
+        isPaid: false,
         recurrenceId: groupId,
         recurrence: period,
       ));
@@ -549,6 +581,7 @@ class FinanceController extends ChangeNotifier {
       accounts = SeedData.defaultAccounts();
       _persistAccounts();
     }
+    _migrateLegacySettlement();
     notifyListeners();
   }
 }

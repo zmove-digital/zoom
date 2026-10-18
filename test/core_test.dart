@@ -66,6 +66,66 @@ void main() {
     });
   });
 
+  group('Transaction efetivação', () {
+    DateTime dayFrom(int days) =>
+        DateHelpers.startOfDay(DateTime.now()).add(Duration(days: days));
+
+    test('não efetiva sozinho: data passada e isPaid false fica vencido', () {
+      final Transaction t = Transaction(
+        id: 't1',
+        type: TransactionType.expense,
+        amount: 10,
+        categoryId: 'c',
+        date: dayFrom(-1),
+        isPaid: false,
+      );
+      expect(t.isSettled, isFalse);
+      expect(t.isPending, isTrue);
+      expect(t.isPastDue, isTrue);
+      expect(t.isOverdue, isTrue);
+    });
+
+    test('efetivado quando isPaid é true', () {
+      final Transaction t = Transaction(
+        id: 't2',
+        type: TransactionType.expense,
+        amount: 10,
+        categoryId: 'c',
+        date: dayFrom(-1),
+        isPaid: true,
+      );
+      expect(t.isSettled, isTrue);
+      expect(t.isOverdue, isFalse);
+    });
+
+    test('data futura nunca é efetivada nem vencida', () {
+      final Transaction t = Transaction(
+        id: 't3',
+        type: TransactionType.income,
+        amount: 10,
+        categoryId: 'c',
+        date: dayFrom(2),
+        isPaid: true,
+      );
+      expect(t.isSettled, isFalse);
+      expect(t.isPastDue, isFalse);
+      expect(t.isOverdue, isFalse);
+    });
+
+    test('legado (isPaid nulo) com data passada aparece vencido', () {
+      final Transaction t = Transaction(
+        id: 't4',
+        type: TransactionType.expense,
+        amount: 10,
+        categoryId: 'c',
+        date: dayFrom(-3),
+      );
+      expect(t.isPaid, isNull);
+      expect(t.isSettled, isFalse);
+      expect(t.isOverdue, isTrue);
+    });
+  });
+
   group('Recurrence', () {
     test('addMonths faz clamp no fim do mês e vira o ano', () {
       expect(addMonths(DateTime(2026, 1, 31), 1), DateTime(2026, 2, 28));

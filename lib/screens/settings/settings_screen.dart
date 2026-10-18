@@ -10,6 +10,7 @@ import '../../data/models/category.dart';
 import '../../services/backup_service.dart';
 import '../../services/media_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/overdue_reminder_service.dart';
 import '../../services/sound_service.dart';
 import '../../state/agenda_controller.dart';
 import '../../state/finance_controller.dart';
@@ -367,6 +368,8 @@ class _NotificationSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final SettingsController settings = context.watch<SettingsController>();
     final NotificationService notifications = context.read<NotificationService>();
+    final OverdueReminderService overdue =
+        context.read<OverdueReminderService>();
     final MediaService media = context.read<MediaService>();
     final String? sound = settings.settings.notificationSoundPath;
 
@@ -428,6 +431,44 @@ class _NotificationSection extends StatelessWidget {
                       builder: (_) => const RemindersScreen()),
                 ),
               ),
+              const Divider(height: 1),
+              SwitchListTile(
+                secondary: const Icon(Icons.error_outline),
+                title: const Text('Avisar lançamentos vencidos'),
+                subtitle: Text(
+                  settings.settings.overdueReminderEnabled
+                      ? 'Todo dia às ${settings.settings.overdueReminderHour.toString().padLeft(2, '0')}:${settings.settings.overdueReminderMinute.toString().padLeft(2, '0')}'
+                      : 'Desativado',
+                ),
+                value: settings.settings.overdueReminderEnabled,
+                onChanged: (bool v) async {
+                  settings.setOverdueReminder(enabled: v);
+                  if (v) await notifications.requestPermissions();
+                  await overdue.sync();
+                },
+              ),
+              if (settings.settings.overdueReminderEnabled) ...<Widget>[
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.schedule),
+                  title: const Text('Horário do aviso de vencidos'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    final TimeOfDay? t = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay(
+                        hour: settings.settings.overdueReminderHour,
+                        minute: settings.settings.overdueReminderMinute,
+                      ),
+                    );
+                    if (t != null) {
+                      settings.setOverdueReminder(
+                          hour: t.hour, minute: t.minute);
+                      await overdue.sync();
+                    }
+                  },
+                ),
+              ],
             ],
           ),
         ),

@@ -29,6 +29,9 @@ class AppSettings {
     this.backupReminderEnabled = false,
     this.backupReminderHour = 20,
     this.backupReminderMinute = 0,
+    this.overdueReminderEnabled = true,
+    this.overdueReminderHour = 9,
+    this.overdueReminderMinute = 0,
     this.lastBackupAt,
     this.pinEnabled = false,
     this.pin = '',
@@ -57,6 +60,9 @@ class AppSettings {
   bool backupReminderEnabled;
   int backupReminderHour;
   int backupReminderMinute;
+  bool overdueReminderEnabled;
+  int overdueReminderHour;
+  int overdueReminderMinute;
   DateTime? lastBackupAt;
   bool pinEnabled;
   String pin;
@@ -85,6 +91,9 @@ class AppSettings {
     bool? backupReminderEnabled,
     int? backupReminderHour,
     int? backupReminderMinute,
+    bool? overdueReminderEnabled,
+    int? overdueReminderHour,
+    int? overdueReminderMinute,
     Object? lastBackupAt = _unset,
     bool? pinEnabled,
     String? pin,
@@ -119,6 +128,11 @@ class AppSettings {
           backupReminderEnabled ?? this.backupReminderEnabled,
       backupReminderHour: backupReminderHour ?? this.backupReminderHour,
       backupReminderMinute: backupReminderMinute ?? this.backupReminderMinute,
+      overdueReminderEnabled:
+          overdueReminderEnabled ?? this.overdueReminderEnabled,
+      overdueReminderHour: overdueReminderHour ?? this.overdueReminderHour,
+      overdueReminderMinute:
+          overdueReminderMinute ?? this.overdueReminderMinute,
       lastBackupAt:
           lastBackupAt == _unset ? this.lastBackupAt : lastBackupAt as DateTime?,
       pinEnabled: pinEnabled ?? this.pinEnabled,
@@ -152,6 +166,9 @@ class AppSettings {
         'backupReminderEnabled': backupReminderEnabled,
         'backupReminderHour': backupReminderHour,
         'backupReminderMinute': backupReminderMinute,
+        'overdueReminderEnabled': overdueReminderEnabled,
+        'overdueReminderHour': overdueReminderHour,
+        'overdueReminderMinute': overdueReminderMinute,
         'lastBackupAt': lastBackupAt?.toIso8601String(),
         'pinEnabled': pinEnabled,
         'pin': pin,
@@ -182,6 +199,12 @@ class AppSettings {
         backupReminderHour: (json['backupReminderHour'] as num?)?.toInt() ?? 20,
         backupReminderMinute:
             (json['backupReminderMinute'] as num?)?.toInt() ?? 0,
+        overdueReminderEnabled:
+            json['overdueReminderEnabled'] as bool? ?? true,
+        overdueReminderHour:
+            (json['overdueReminderHour'] as num?)?.toInt() ?? 9,
+        overdueReminderMinute:
+            (json['overdueReminderMinute'] as num?)?.toInt() ?? 0,
         lastBackupAt: json['lastBackupAt'] == null
             ? null
             : DateTime.parse(json['lastBackupAt'] as String),

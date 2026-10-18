@@ -46,7 +46,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     _categoryId = e?.categoryId;
     _accountId = e?.accountId;
     _repeat = e?.recurrence;
-    _paid = e?.isPaid;
+    _paid = e?.isPaid ?? false;
     if (e != null) {
       _amount.text = e.amount.toStringAsFixed(2).replaceAll('.', ',');
       _description.text = e.description;
@@ -149,10 +149,11 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
   Widget _settlementSection(ThemeData theme) {
     final bool income = _type == TransactionType.income;
     final String doneLabel = income ? 'Recebido' : 'Pago';
-    final String pendingLabel = income ? 'A receber' : 'A pagar';
     final DateTime now = DateTime.now();
     final bool isFuture =
         _date.isAfter(DateTime(now.year, now.month, now.day, 23, 59, 59));
+    final bool isPastDue =
+        _date.isBefore(DateTime(now.year, now.month, now.day));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,7 +161,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
         _sectionLabel(theme, Icons.check_circle_outline, 'EFETIVAÇÃO'),
         if (isFuture) ...<Widget>[
           Text(
-            'Data futura: por enquanto consta como "$pendingLabel". '
+            'Data futura: por enquanto consta como pendente. '
             'Efetivar move a data para hoje.',
             style: theme.textTheme.bodySmall
                 ?.copyWith(color: theme.colorScheme.outline),
@@ -171,7 +172,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
               final DateTime n = DateTime.now();
               _date =
                   DateTime(n.year, n.month, n.day, _date.hour, _date.minute);
-              _paid = null;
+              _paid = true;
             }),
             icon: const Icon(Icons.check_circle_outline),
             label: const Text('Efetivar agora'),
@@ -179,13 +180,15 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
         ] else ...<Widget>[
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            value: _paid != false,
-            onChanged: (bool v) => setState(() => _paid = v ? null : false),
+            value: _paid == true,
+            onChanged: (bool v) => setState(() => _paid = v),
             title: Text(doneLabel),
             subtitle: Text(
-              _paid != false
+              _paid == true
                   ? 'Conta como efetivado'
-                  : 'Marcado como $pendingLabel',
+                  : (isPastDue
+                      ? 'Vencido — ainda não efetivado'
+                      : 'Pendente — aguardando efetivação'),
             ),
           ),
         ],

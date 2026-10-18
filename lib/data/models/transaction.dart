@@ -88,9 +88,21 @@ class Transaction {
     return date.isAfter(DateTime(now.year, now.month, now.day, 23, 59, 59));
   }
 
-  /// Efetivado somente quando a data é hoje ou passada e não foi marcado
-  /// manualmente como pendente. Lançamentos futuros nunca são efetivados.
-  bool get isSettled => !isFuture && isPaid != false;
+  /// A data do lançamento já passou (antes de hoje).
+  bool get isPastDue {
+    final DateTime now = DateTime.now();
+    return date.isBefore(DateTime(now.year, now.month, now.day));
+  }
+
+  /// Efetivado somente quando o usuário confirma a efetivação
+  /// (`isPaid == true`). Lançamentos futuros nunca são efetivados sozinhos.
+  bool get isSettled => !isFuture && isPaid == true;
+
+  /// Pendente de efetivação (inclui futuros e vencidos).
+  bool get isPending => !isSettled;
+
+  /// Vencido: a data já passou e o lançamento ainda não foi efetivado.
+  bool get isOverdue => isPastDue && !isSettled;
 
   double get signedAmount =>
       type == TransactionType.income ? amount : -amount;

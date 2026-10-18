@@ -27,6 +27,7 @@ class DbKeys {
 class NotificationIds {
   static const int backupReminder = 1000;
   static const int alarmBase = 2000;
+  static const int overdueReminder = 3000;
 }
 
 const List<String> kCurrencyOptions = <String>[

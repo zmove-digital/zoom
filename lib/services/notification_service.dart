@@ -22,6 +22,14 @@ class NotificationService {
     importance: Importance.max,
   );
 
+  static const AndroidNotificationChannel _overdueChannel =
+      AndroidNotificationChannel(
+    'zoom_vencidos',
+    'Lançamentos vencidos',
+    description: 'Avisos diários de lançamentos vencidos e não efetivados',
+    importance: Importance.max,
+  );
+
   Future<void> init() async {
     if (_ready) return;
     try {
@@ -209,6 +217,57 @@ class NotificationService {
     } catch (_) {}
   }
 
+  /// Agenda (ou reagenda) o aviso diário de lançamentos vencidos.
+  Future<void> scheduleOverdueReminder({
+    required String title,
+    required String body,
+    required int hour,
+    required int minute,
+  }) async {
+    await init();
+    try {
+      final AndroidFlutterLocalNotificationsPlugin? android =
+          _plugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      await android?.createNotificationChannel(_overdueChannel);
+
+      final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+      tz.TZDateTime when =
+          tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+      if (when.isBefore(now)) {
+        when = when.add(const Duration(days: 1));
+      }
+      await _plugin.zonedSchedule(
+        NotificationIds.overdueReminder,
+        title,
+        body,
+        when,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _overdueChannel.id,
+            _overdueChannel.name,
+            channelDescription: _overdueChannel.description,
+            importance: Importance.max,
+            priority: Priority.high,
+            styleInformation: BigTextStyleInformation(body),
+          ),
+          iOS: const DarwinNotificationDetails(),
+          macOS: const DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (_) {}
+  }
+
+  Future<void> cancelOverdueReminder() async {
+    try {
+      await _plugin.cancel(NotificationIds.overdueReminder);
+    } catch (_) {}
+  }
+
   Future<void> cancel(int id) async {
     try {
       await _plugin.cancel(id);
@@ -220,7 +279,8 @@ class NotificationService {
       final List<PendingNotificationRequest> pending =
           await _plugin.pendingNotificationRequests();
       for (final PendingNotificationRequest p in pending) {
-        if (p.id != NotificationIds.backupReminder) {
+        if (p.id != NotificationIds.backupReminder &&
+            p.id != NotificationIds.overdueReminder) {
           await _plugin.cancel(p.id);
         }
       }

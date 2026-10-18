@@ -7,6 +7,7 @@ import 'data/storage/local_database.dart';
 import 'services/backup_service.dart';
 import 'services/media_service.dart';
 import 'services/notification_service.dart';
+import 'services/overdue_reminder_service.dart';
 import 'services/sound_service.dart';
 import 'state/agenda_controller.dart';
 import 'state/finance_controller.dart';
@@ -28,6 +29,18 @@ Future<void> main() async {
   await notificationService.init();
   reminderController.scheduler = notificationService.scheduleAll;
 
+  final OverdueReminderService overdueReminder = OverdueReminderService(
+    financeController,
+    settingsController,
+    notificationService,
+  );
+  financeController.addListener(() {
+    overdueReminder.sync();
+  });
+  settingsController.addListener(() {
+    overdueReminder.sync();
+  });
+
   runApp(
     MultiProvider(
       providers: [
@@ -36,6 +49,7 @@ Future<void> main() async {
         ChangeNotifierProvider<AgendaController>.value(value: agendaController),
         ChangeNotifierProvider<ReminderController>.value(value: reminderController),
         Provider<NotificationService>.value(value: notificationService),
+        Provider<OverdueReminderService>.value(value: overdueReminder),
         Provider<BackupService>(create: (_) => BackupService(db)),
         Provider<MediaService>(create: (_) => MediaService()),
         Provider<SoundService>(create: (_) => SoundService()),
@@ -44,4 +58,7 @@ Future<void> main() async {
       child: const ZoomApp(),
     ),
   );
+
+  // Mantém o aviso diário de vencidos em dia já na abertura.
+  await overdueReminder.sync();
 }

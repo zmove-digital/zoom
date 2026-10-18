@@ -99,6 +99,14 @@ class SettingsController extends ChangeNotifier {
         ),
       );
 
+  void setOverdueReminder({bool? enabled, int? hour, int? minute}) => update(
+        (AppSettings s) => s.copyWith(
+          overdueReminderEnabled: enabled,
+          overdueReminderHour: hour,
+          overdueReminderMinute: minute,
+        ),
+      );
+
   void markBackupDone() =>
       update((AppSettings s) => s.copyWith(lastBackupAt: DateTime.now()));
 

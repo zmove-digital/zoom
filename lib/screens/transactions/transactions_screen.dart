@@ -74,6 +74,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       if (t.isSettled) settledBalance += t.signedAmount;
     }
 
+    final int overdueCount =
+        list.where((Transaction t) => t.isOverdue).length;
+
     return AppScaffold(
       title: 'Extrato',
       body: CustomScrollView(
@@ -84,6 +87,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               child: Column(
                 children: <Widget>[
                   _monthSelector(theme, sym, income, expense, settledBalance),
+                  if (overdueCount > 0) ...<Widget>[
+                    const SizedBox(height: 10),
+                    _overdueBanner(theme, overdueCount),
+                  ],
                   const SizedBox(height: 12),
                   TextField(
                     controller: _search,
@@ -245,6 +252,34 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           IconButton(
             onPressed: () => _changeMonth(1),
             icon: const Icon(Icons.chevron_right),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _overdueBanner(ThemeData theme, int count) {
+    final Color error = theme.colorScheme.error;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: error.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: error.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.error_outline, color: error, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$count lançamento(s) vencido(s) — toque em Efetivar para regularizar',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
