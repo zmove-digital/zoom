@@ -140,6 +140,61 @@ void main() {
       expect(RecurrencePeriod.monthly.next(d), DateTime(2026, 6, 10));
     });
 
+    test('recurrenceDates respeita quantas vezes o usuário escolheu', () {
+      expect(
+        recurrenceDates(DateTime(2026, 5, 10), RecurrencePeriod.monthly,
+            count: 3),
+        <DateTime>[
+          DateTime(2026, 6, 10),
+          DateTime(2026, 7, 10),
+          DateTime(2026, 8, 10),
+        ],
+      );
+      expect(
+        recurrenceDates(DateTime(2026, 5, 10), RecurrencePeriod.weekly,
+            count: 2),
+        <DateTime>[DateTime(2026, 5, 17), DateTime(2026, 5, 24)],
+      );
+    });
+
+    test('recurrenceDates sem repetição retorna vazio', () {
+      // count é quantas ocorrências gerar além da data base: 0 = nenhuma.
+      expect(
+        recurrenceDates(DateTime(2026, 5, 10), RecurrencePeriod.monthly,
+            count: 0),
+        isEmpty,
+      );
+      expect(
+        recurrenceDates(DateTime(2026, 5, 10), RecurrencePeriod.monthly,
+            count: 1),
+        <DateTime>[DateTime(2026, 6, 10)],
+      );
+    });
+
+    test('recurrenceDates para no fim quando não há número escolhido', () {
+      expect(
+        recurrenceDates(DateTime(2026, 5, 10), RecurrencePeriod.monthly,
+            until: DateTime(2026, 7, 31)),
+        <DateTime>[DateTime(2026, 6, 10), DateTime(2026, 7, 10)],
+      );
+    });
+
+    test('json roundtrip preserva quantas vezes repete', () {
+      final Transaction tx = Transaction(
+        id: 'r2',
+        type: TransactionType.expense,
+        amount: 30,
+        categoryId: 'c',
+        date: DateTime(2026, 5, 10),
+        recurrenceId: 'grp',
+        recurrence: RecurrencePeriod.monthly,
+        recurrenceCount: 6,
+      );
+      final Transaction restored = Transaction.fromJson(tx.toJson());
+      expect(restored.recurrenceCount, 6);
+      expect(restored.isRecurring, isTrue);
+    });
+
     test('json roundtrip preserva a recorrência', () {
       final Transaction tx = Transaction(
         id: 'r1',

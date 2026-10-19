@@ -27,6 +27,11 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
   final TextEditingController _amount = TextEditingController();
   final TextEditingController _description = TextEditingController();
   final TextEditingController _notes = TextEditingController();
+  final TextEditingController _repeatCount = TextEditingController();
+
+  /// Quantidade sugerida de repetições (total da série, o primeiro incluído).
+  static const int _defaultRepeatCount = 12;
+  bool _repeatCountLoaded = false;
 
   late TransactionType _type;
   late DateTime _date;
@@ -47,6 +52,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     _accountId = e?.accountId;
     _repeat = e?.recurrence;
     _paid = e?.isPaid ?? false;
+    _repeatCount.text = '${e?.recurrenceCount ?? _defaultRepeatCount}';
     if (e != null) {
       _amount.text = e.amount.toStringAsFixed(2).replaceAll('.', ',');
       _description.text = e.description;
@@ -59,6 +65,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     _amount.dispose();
     _description.dispose();
     _notes.dispose();
+    _repeatCount.dispose();
     super.dispose();
   }
 
@@ -81,6 +88,27 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
             _date.minute);
       });
     }
+  }
+
+  /// Quantidade de lançamentos da série (mínimo 1, máximo 999).
+  int get _repeatCountValue {
+    final int parsed =
+        int.tryParse(_repeatCount.text.trim()) ?? _defaultRepeatCount;
+    if (parsed < 1) return 1;
+    if (parsed > 999) return 999;
+    return parsed;
+  }
+
+  /// Mostra em que data cai o último lançamento da série.
+  String _repeatPreview() {
+    final RecurrencePeriod? period = _repeat;
+    if (period == null) return '';
+    final int total = _repeatCountValue;
+    final List<DateTime> dates =
+        recurrenceDates(_date, period, count: total - 1);
+    if (dates.isEmpty) return 'Sem repetição — só este lançamento';
+    return '$total lançamentos: de ${DateHelpers.full.format(_date)} '
+        'até ${DateHelpers.full.format(dates.last)}';
   }
 
   Widget _repeatSelector(ThemeData theme) {
@@ -122,6 +150,23 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
             ),
           ],
         ),
+        if (_repeat != null) ...<Widget>[
+          const SizedBox(height: 14),
+          TextField(
+            controller: _repeatCount,
+            keyboardType: TextInputType.number,
+            inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.digitsOnly,
+            ],
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'Quantas vezes',
+              prefixIcon: const Icon(Icons.numbers),
+              helperText: _repeatPreview(),
+              helperMaxLines: 2,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -240,14 +285,19 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     );
 
     if (!_isEditing) {
-      finance.addTransaction(tx, repeat: _repeat);
+      finance.addTransaction(
+        tx,
+        repeat: _repeat,
+        repeatCount: _repeat == null ? null : _repeatCountValue,
+      );
     } else {
       final Transaction original = widget.existing!;
       if (original.recurrenceId == null) {
         if (_repeat == null) {
           finance.updateTransaction(tx);
         } else {
-          finance.makeRecurringFrom(tx, _repeat!);
+          finance.makeRecurringFrom(tx, _repeat!,
+              repeatCount: _repeatCountValue);
         }
       } else {
         final RecurrenceScope? scope = await showEditScopeDialog(context);
@@ -256,6 +306,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
           tx,
           includeFuture: scope == RecurrenceScope.thisAndFuture,
           repeat: _repeat,
+          repeatCount: _repeat == null ? null : _repeatCountValue,
         );
       }
     }
@@ -286,6 +337,19 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Séries antigas não guardavam o número de repetições: nesse caso mostra
+  /// quantos lançamentos a série tem hoje.
+  void _loadLegacyRepeatCount(FinanceController finance) {
+    final Transaction? e = widget.existing;
+    if (e == null || e.recurrenceId == null || e.recurrenceCount != null) {
+      return;
+    }
+    final int count = finance.transactions
+        .where((Transaction t) => t.recurrenceId == e.recurrenceId)
+        .length;
+    if (count > 0) _repeatCount.text = '$count';
+  }
+
   @override
   Widget build(BuildContext context) {
     final FinanceController finance = context.watch<FinanceController>();
@@ -298,6 +362,10 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     final List<Account> accounts = finance.accounts;
     if (_accountId == null && accounts.isNotEmpty) {
       _accountId = accounts.first.id;
+    }
+    if (!_repeatCountLoaded) {
+      _repeatCountLoaded = true;
+      _loadLegacyRepeatCount(finance);
     }
 
     return Scaffold(

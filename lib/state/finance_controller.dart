@@ -171,16 +171,24 @@ class FinanceController extends ChangeNotifier {
 
   static const int recurrenceHorizonMonths = 24;
 
-  void addTransaction(Transaction t, {RecurrencePeriod? repeat}) {
+  /// [repeatCount] = quantos lançamentos a série tem ao todo (o primeiro
+  /// incluído). `null` mantém o horizonte padrão de [recurrenceHorizonMonths].
+  void addTransaction(
+    Transaction t, {
+    RecurrencePeriod? repeat,
+    int? repeatCount,
+  }) {
     if (repeat == null) {
       transactions.add(t);
     } else {
       final String groupId = newId();
       t.recurrenceId = groupId;
       t.recurrence = repeat;
+      t.recurrenceCount = repeatCount;
       transactions.add(t);
       transactions.addAll(
-        _buildOccurrences(t, repeat, groupId, _recurrenceEnd(t.date)),
+        _buildOccurrences(t, repeat, groupId,
+            count: _extraOccurrences(repeatCount, 1)),
       );
     }
     _persistTransactions();
@@ -244,16 +252,19 @@ class FinanceController extends ChangeNotifier {
     if (changed) _persistTransactions();
   }
 
-  void makeRecurringFrom(Transaction anchor, RecurrencePeriod repeat) {
+  void makeRecurringFrom(Transaction anchor, RecurrencePeriod repeat,
+      {int? repeatCount}) {
     final int index =
         transactions.indexWhere((Transaction e) => e.id == anchor.id);
     if (index < 0) return;
     final String groupId = newId();
     anchor.recurrenceId = groupId;
     anchor.recurrence = repeat;
+    anchor.recurrenceCount = repeatCount;
     transactions[index] = anchor;
     transactions.addAll(
-      _buildOccurrences(anchor, repeat, groupId, _recurrenceEnd(anchor.date)),
+      _buildOccurrences(anchor, repeat, groupId,
+          count: _extraOccurrences(repeatCount, 1)),
     );
     _persistTransactions();
     notifyListeners();
@@ -263,6 +274,7 @@ class FinanceController extends ChangeNotifier {
     Transaction anchor, {
     required bool includeFuture,
     RecurrencePeriod? repeat,
+    int? repeatCount,
   }) {
     final int index =
         transactions.indexWhere((Transaction e) => e.id == anchor.id);
@@ -273,6 +285,7 @@ class FinanceController extends ChangeNotifier {
     if (!includeFuture || groupId == null) {
       anchor.recurrenceId = original.recurrenceId;
       anchor.recurrence = original.recurrence;
+      anchor.recurrenceCount = original.recurrenceCount;
       transactions[index] = anchor;
       _persistTransactions();
       notifyListeners();
@@ -289,21 +302,34 @@ class FinanceController extends ChangeNotifier {
         if (e.recurrenceId == groupId) {
           e.recurrenceId = null;
           e.recurrence = null;
+          e.recurrenceCount = null;
         }
       }
       anchor.recurrenceId = null;
       anchor.recurrence = null;
+      anchor.recurrenceCount = null;
     } else {
       anchor.recurrenceId = groupId;
       anchor.recurrence = repeat;
+      anchor.recurrenceCount = repeatCount;
     }
     final int anchorIndex =
         transactions.indexWhere((Transaction e) => e.id == anchor.id);
     transactions[anchorIndex] = anchor;
     if (repeat != null) {
+      // O número de repetições é do total da série: o que já ficou para trás
+      // (incluindo o próprio lançamento) conta.
+      final int existing = transactions
+          .where((Transaction e) =>
+              e.recurrenceId == groupId && !e.date.isAfter(anchor.date))
+          .length;
       transactions.addAll(
-        _buildOccurrences(anchor, repeat, groupId, _recurrenceEnd(anchor.date)),
+        _buildOccurrences(anchor, repeat, groupId,
+            count: _extraOccurrences(repeatCount, existing)),
       );
+      for (final Transaction e in transactions) {
+        if (e.recurrenceId == groupId) e.recurrenceCount = repeatCount;
+      }
     }
     _persistTransactions();
     notifyListeners();
@@ -326,33 +352,43 @@ class FinanceController extends ChangeNotifier {
   DateTime _recurrenceEnd(DateTime start) =>
       addMonths(start, recurrenceHorizonMonths);
 
+  /// Quantas ocorrências gerar além das [existing] já existentes para a série
+  /// ficar com [total] lançamentos (nulo = horizonte padrão de 24 meses).
+  int? _extraOccurrences(int? total, int existing) {
+    if (total == null) return null;
+    final int extra = total - existing;
+    return extra < 0 ? 0 : extra;
+  }
+
   List<Transaction> _buildOccurrences(
     Transaction base,
     RecurrencePeriod period,
-    String groupId,
-    DateTime end,
-  ) {
-    final List<Transaction> list = <Transaction>[];
-    DateTime cursor = base.date;
-    while (true) {
-      cursor = period.next(cursor);
-      if (cursor.isAfter(end)) break;
-      list.add(Transaction(
-        id: newId(),
-        type: base.type,
-        amount: base.amount,
-        categoryId: base.categoryId,
-        accountId: base.accountId,
-        date: cursor,
-        description: base.description,
-        notes: base.notes,
-        // Ocorrências futuras nascem pendentes: a efetivação é manual.
-        isPaid: false,
-        recurrenceId: groupId,
-        recurrence: period,
-      ));
-    }
-    return list;
+    String groupId, {
+    int? count,
+  }) {
+    final List<DateTime> dates = recurrenceDates(
+      base.date,
+      period,
+      count: count,
+      until: count == null ? _recurrenceEnd(base.date) : null,
+    );
+    return dates
+        .map((DateTime date) => Transaction(
+              id: newId(),
+              type: base.type,
+              amount: base.amount,
+              categoryId: base.categoryId,
+              accountId: base.accountId,
+              date: date,
+              description: base.description,
+              notes: base.notes,
+              // Ocorrências futuras nascem pendentes: a efetivação é manual.
+              isPaid: false,
+              recurrenceId: groupId,
+              recurrence: period,
+              recurrenceCount: base.recurrenceCount,
+            ))
+        .toList();
   }
 
   void addCategory(Category c) {

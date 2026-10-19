@@ -50,6 +50,29 @@ DateTime addMonths(DateTime date, int months) {
   return DateTime(year, month, day, date.hour, date.minute, date.second);
 }
 
+/// Datas das ocorrências seguintes a [start] (sem incluir a própria [start]).
+///
+/// [count] limita quantas ocorrências gerar; [until] limita a data final.
+/// Informe pelo menos um dos dois (sem nenhum não há fim para a repetição).
+List<DateTime> recurrenceDates(
+  DateTime start,
+  RecurrencePeriod period, {
+  int? count,
+  DateTime? until,
+}) {
+  final List<DateTime> dates = <DateTime>[];
+  if (count != null && count <= 0) return dates;
+  if (count == null && until == null) return dates;
+  DateTime cursor = start;
+  while (true) {
+    if (count != null && dates.length >= count) break;
+    cursor = period.next(cursor);
+    if (until != null && cursor.isAfter(until)) break;
+    dates.add(cursor);
+  }
+  return dates;
+}
+
 class Transaction {
   Transaction({
     required this.id,
@@ -63,6 +86,7 @@ class Transaction {
     this.isPaid,
     this.recurrenceId,
     this.recurrence,
+    this.recurrenceCount,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -79,6 +103,10 @@ class Transaction {
   bool? isPaid;
   String? recurrenceId;
   RecurrencePeriod? recurrence;
+
+  /// Quantos lançamentos a série tem ao todo (o primeiro incluído).
+  /// `null` = repetição sem número definido (usa o horizonte padrão).
+  int? recurrenceCount;
   final DateTime createdAt;
 
   bool get isRecurring => recurrenceId != null && recurrence != null;
@@ -129,6 +157,7 @@ class Transaction {
       isPaid: isPaid ?? this.isPaid,
       recurrenceId: recurrenceId,
       recurrence: recurrence,
+      recurrenceCount: recurrenceCount,
       createdAt: createdAt,
     );
   }
@@ -145,6 +174,7 @@ class Transaction {
         'isPaid': isPaid,
         'recurrenceId': recurrenceId,
         'recurrence': recurrence?.name,
+        'recurrenceCount': recurrenceCount,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -160,6 +190,7 @@ class Transaction {
         isPaid: json['isPaid'] as bool?,
         recurrenceId: json['recurrenceId'] as String?,
         recurrence: recurrencePeriodFromName(json['recurrence'] as String?),
+        recurrenceCount: (json['recurrenceCount'] as num?)?.toInt(),
         createdAt: json['createdAt'] == null
             ? null
             : DateTime.parse(json['createdAt'] as String),
