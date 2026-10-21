@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://zmove.com.br/sitemap.xml
+Sitemap: https://zmove.net/sitemap.xml

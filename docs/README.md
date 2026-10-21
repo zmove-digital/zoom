@@ -29,17 +29,41 @@ docs/
 > então ele funciona tanto em subpasta (`/zoom/`) quanto na raiz de um domínio
 > próprio, sem alterar nada.
 
-## Domínio próprio (zmove.com.br)
+## Domínio próprio (zmove.net)
 
-Quando o domínio estiver registrado:
+O domínio **ainda não está registrado** (sem registros NS/A no DNS). As URLs
+absolutas do site já apontam para `https://zmove.net/`, então o único passo que
+falta é registrar o domínio e configurar o DNS.
 
-1. Crie o arquivo `docs/CNAME` contendo apenas `zmove.com.br`.
-2. No DNS, aponte `zmove.com.br` para os IPs do GitHub Pages
-   (185.199.108–111.153) **ou** crie um registro `CNAME` para
+Quando o `zmove.net` estiver registrado:
+
+1. **Registre o domínio** e aponte os servidores de nome do provedor.
+2. **No DNS do `zmove.net`**, crie os registros do GitHub Pages:
+
+   | Tipo | Nome | Valor |
+   |---|---|---|
+   | `A` | `@` | `185.199.108.153` |
+   | `A` | `@` | `185.199.109.153` |
+   | `A` | `@` | `185.199.110.153` |
+   | `A` | `@` | `185.199.111.153` |
+   | `AAAA` | `@` | `2606:50c0:8000::153` |
+   | `AAAA` | `@` | `2606:50c0:8001::153` |
+   | `AAAA` | `@` | `2606:50c0:8002::153` |
+   | `AAAA` | `@` | `2606:50c0:8003::153` |
+
+   Se o provedor não aceitar `AAAA`, use apenas os quatro registros `A`.
+   Em subdomínios (ex.: `www.zmove.net`) use `CNAME` para
    `zmove-digital.github.io`.
-3. Em **Settings → Pages**, marque **Enforce HTTPS**.
-4. Atualize as URLs absolutas em `index.html` (canonical, Open Graph),
-   `robots.txt` e `sitemap.xml` — hoje já apontam para `https://zmove.com.br/`.
+3. **Crie o arquivo `docs/CNAME`** contendo apenas `zmove.net` e faça commit.
+   O GitHub Pages passa a servir o site pelo domínio e valida a titularidade
+   (pode levar até 24 h para o certificado ser emitido).
+4. Em **Settings → Pages**, marque **Enforce HTTPS**.
+5. Confira no rodapé do painel do Pages: o status deve ficar
+   *Your site is live at https://zmove.net/*.
+
+> Enquanto o `docs/CNAME` não existir, o site continua no endereço padrão
+> `https://zmove-digital.github.io/zoom/` — nenhum dos dois quebra o outro.
+
 
 ## Regenerar as artes
 
@@ -65,7 +89,7 @@ Antes de publicar a listagem na Play, revisar:
 
 - **CNPJ** — hoje aparece "CNPJ em processo de regularização" no rodapé,
   na política de privacidade e na página de classificação.
-- **E-mail de contato** — `contato@zmove.com.br` (usar um e-mail real e monitorado).
+- **E-mail de contato** — `contato@zmove.net` (usar um e-mail real e monitorado).
 - **Modelo de cobrança** — o texto do site fala em *teste de 3 dias* e *compra
   única pela Play*. Ajustar se o modelo for alterado.
 - **Link da Play** — o botão "Baixar na Google Play" aponta para `#baixar`
