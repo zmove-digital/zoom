@@ -82,6 +82,26 @@ As imagens da Google Play e do compartilhamento social ficam em `assets/img/`:
 > (usuário fictício "Marina Costa", outubro/2026) — nada de dados reais.
 > As imagens em PNG já estão no tamanho exigido pela Play (1080×2400).
 
+## Marca (ZOOM × ZMOVE)
+
+- **ZOOM** é o aplicativo. **ZMOVE** é a empresa que o mantém e publica.
+  O cabeçalho mostra `ZOOM` com o selo `da ZMOVE`; o rodapé reforça que o
+  ZOOM é um aplicativo da ZMOVE; a seção `#zmove` é o espaço da empresa.
+- O símbolo é o **mesmo ícone do aplicativo**: o "Z" verde `#1FF09D` sobre o
+  fundo `#080911`. A origem é `assets/branding/logo.png` (e os `mipmap-*` do
+  Android) — nada de um logo redesenhado para o site.
+- Onde ele aparece:
+
+  | Onde | Arquivo | Observação |
+  |---|---|---|
+  | Aba do navegador | `favicon.svg` | "Z" vetorial, traçado a partir do logo do app |
+  | Manifesto do site | `assets/img/icon-192.png`, `icon-512.png` | tile escuro com o "Z" |
+  | Listagem na Play | `assets/img/play-icon-512.png` | 512×512 opaco, igual ao ícone do launcher |
+  | Cabeçalho e rodapé | SVG inline em `index.html` e nas páginas legais | não custa requisição extra |
+
+- Se o ícone do aplicativo mudar, `play-icon-512.png`, `icon-192.png`,
+  `icon-512.png` e `favicon.svg` precisam ser regerados com o novo logo.
+
 
 ## Ajustes de conteúdo pendentes
 
