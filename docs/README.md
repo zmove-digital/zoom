@@ -94,13 +94,20 @@ As imagens da Google Play e do compartilhamento social ficam em `assets/img/`:
 
   | Onde | Arquivo | Observação |
   |---|---|---|
-  | Aba do navegador | `favicon.svg` | "Z" vetorial, traçado a partir do logo do app |
+  | Aba do navegador | `favicon.ico` (16/32/48) e `assets/img/favicon-32.png` | PNG do app — nítido até em 16 px |
+  | Cabeçalho e rodapé | `assets/img/marca-64.png` | PNG do app a 64 px (2× de uma marca de 32 px) |
   | Manifesto do site | `assets/img/icon-192.png`, `icon-512.png` | tile escuro com o "Z" |
+  | iOS / "adicionar à tela de início" | `assets/img/icon-apple-180.png` | quadrado opaco, sem canto arredondado |
   | Listagem na Play | `assets/img/play-icon-512.png` | 512×512 opaco, igual ao ícone do launcher |
-  | Cabeçalho e rodapé | SVG inline em `index.html` e nas páginas legais | não custa requisição extra |
 
-- Se o ícone do aplicativo mudar, `play-icon-512.png`, `icon-192.png`,
-  `icon-512.png` e `favicon.svg` precisam ser regerados com o novo logo.
+> Todos esses arquivos são gerados a partir de `assets/branding/logo.png` (o
+> logo do próprio aplicativo) — **não existe um desenho paralelo**. Por isso
+> nada é vetorial: um "Z" traçado em polígono fica serrilhado em 16–32 px.
+> O raster do app já vem com antialiasing e é igual ao ícone do celular.
+>
+> Se o ícone do aplicativo mudar, `marca-64.png`, `favicon-32.png`,
+> `favicon.ico`, `icon-192.png`, `icon-512.png`, `icon-apple-180.png` e
+> `play-icon-512.png` precisam ser regerados com o novo logo.
 
 
 ## Ajustes de conteúdo pendentes
