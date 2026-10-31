@@ -1,0 +1,40 @@
+workflows:
+  ios-unsigned:
+    name: ZOOM iOS (unsigned IPA para Sideloadly)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Flutter doctor
+        script: flutter doctor -v
+      - name: Ensure iOS platform files (gera Podfile se faltar)
+        script: |
+          if [ ! -f ios/Podfile ]; then
+            flutter create --platforms=ios .
+          fi
+      - name: Get packages
+        script: flutter pub get
+      - name: Build iOS (sem assinatura)
+        script: flutter build ios --release --no-codesign
+      - name: Empacotar IPA sem assinatura
+        script: |
+          set -e
+          cd build/ios/iphoneos
+          rm -rf Payload
+          mkdir Payload
+          cp -R Runner.app Payload/
+          zip -qr ZOOM-unsigned.ipa Payload
+          rm -rf Payload
+          ls -la
+    artifacts:
+      - build/ios/iphoneos/ZOOM-unsigned.ipa
+      - build/ios/iphoneos/Runner.app
