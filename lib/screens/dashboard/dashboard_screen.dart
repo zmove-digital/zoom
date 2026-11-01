@@ -27,6 +27,8 @@ import '../transactions/transactions_screen.dart';
 import '../agenda/agenda_editor_screen.dart';
 import '../agenda/diary_report_screen.dart';
 
+const double _dashboardHorizontalPadding = 16;
+
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
@@ -54,7 +56,8 @@ class DashboardScreen extends StatelessWidget {
       body: RefreshIndicator(
         onRefresh: () async {},
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+          padding: const EdgeInsets.fromLTRB(
+              _dashboardHorizontalPadding, 16, _dashboardHorizontalPadding, 120),
           children: <Widget>[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -434,51 +437,55 @@ class DashboardScreen extends StatelessWidget {
             height: 150,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
               itemCount: finance.goals.length,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (BuildContext context, int index) {
                 final Goal g = finance.goals[index];
-                return SizedBox(
-                  width: MediaQuery.sizeOf(context).width,
-                  child: SectionCard(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
-                          children: <Widget>[
-                            Icon(Icons.flag_rounded, color: g.color, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(g.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.titleSmall
-                                      ?.copyWith(fontWeight: FontWeight.w700)),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Text('${(g.progress * 100).toStringAsFixed(0)}%',
-                            style: theme.textTheme.headlineSmall
-                                ?.copyWith(fontWeight: FontWeight.w800)),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: g.progress.toDouble(),
-                            minHeight: 8,
-                            color: g.color,
-                            backgroundColor:
-                                theme.colorScheme.surfaceContainerHighest,
+                return Transform.translate(
+                  offset: const Offset(-_dashboardHorizontalPadding, 0),
+                  child: SizedBox(
+                    width: MediaQuery.sizeOf(context).width,
+                    child: SectionCard(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              Icon(Icons.flag_rounded, color: g.color, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(g.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w700)),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${Money.format(g.savedAmount, '', symbol: sym)} de ${Money.format(g.targetAmount, '', symbol: sym)}',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
+                          const Spacer(),
+                          Text('${(g.progress * 100).toStringAsFixed(0)}%',
+                              style: theme.textTheme.headlineSmall
+                                  ?.copyWith(fontWeight: FontWeight.w800)),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              value: g.progress.toDouble(),
+                              minHeight: 8,
+                              color: g.color,
+                              backgroundColor:
+                                  theme.colorScheme.surfaceContainerHighest,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '${Money.format(g.savedAmount, '', symbol: sym)} de ${Money.format(g.targetAmount, '', symbol: sym)}',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
