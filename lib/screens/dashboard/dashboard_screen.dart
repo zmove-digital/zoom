@@ -429,25 +429,19 @@ class DashboardScreen extends StatelessWidget {
             style:
                 theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 10),
-        OverflowBox(
-          alignment: Alignment.center,
-          minWidth: MediaQuery.sizeOf(context).width,
-          maxWidth: MediaQuery.sizeOf(context).width,
-          child: SizedBox(
-            height: 150,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
-              itemCount: finance.goals.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (BuildContext context, int index) {
-                final Goal g = finance.goals[index];
-                return Transform.translate(
-                  offset: const Offset(-_dashboardHorizontalPadding, 0),
-                  child: SizedBox(
-                    width: MediaQuery.sizeOf(context).width,
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            return SizedBox(
+              height: 150,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: finance.goals.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (BuildContext context, int index) {
+                  final Goal g = finance.goals[index];
+                  return SizedBox(
+                    width: constraints.maxWidth,
                     child: SectionCard(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
@@ -487,11 +481,11 @@ class DashboardScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
+                  );
+                },
+              ),
+            );
+          },
         ),
       ],
     );
