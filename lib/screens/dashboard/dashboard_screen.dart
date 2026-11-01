@@ -426,58 +426,64 @@ class DashboardScreen extends StatelessWidget {
             style:
                 theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 10),
-        SizedBox(
-          height: 150,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: finance.goals.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (BuildContext context, int index) {
-              final Goal g = finance.goals[index];
-              return SizedBox(
-                width: 200,
-                child: SectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Icon(Icons.flag_rounded, color: g.color, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(g.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.w700)),
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                      Text('${(g.progress * 100).toStringAsFixed(0)}%',
-                          style: theme.textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: g.progress.toDouble(),
-                          minHeight: 8,
-                          color: g.color,
-                          backgroundColor:
-                              theme.colorScheme.surfaceContainerHighest,
+        OverflowBox(
+          alignment: Alignment.center,
+          minWidth: MediaQuery.sizeOf(context).width,
+          maxWidth: MediaQuery.sizeOf(context).width,
+          child: SizedBox(
+            height: 150,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: finance.goals.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (BuildContext context, int index) {
+                final Goal g = finance.goals[index];
+                return SizedBox(
+                  width: MediaQuery.sizeOf(context).width,
+                  child: SectionCard(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Row(
+                          children: <Widget>[
+                            Icon(Icons.flag_rounded, color: g.color, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(g.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.w700)),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${Money.format(g.savedAmount, '', symbol: sym)} de ${Money.format(g.targetAmount, '', symbol: sym)}',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
+                        const Spacer(),
+                        Text('${(g.progress * 100).toStringAsFixed(0)}%',
+                            style: theme.textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w800)),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: g.progress.toDouble(),
+                            minHeight: 8,
+                            color: g.color,
+                            backgroundColor:
+                                theme.colorScheme.surfaceContainerHighest,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${Money.format(g.savedAmount, '', symbol: sym)} de ${Money.format(g.targetAmount, '', symbol: sym)}',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ],
