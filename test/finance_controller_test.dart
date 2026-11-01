@@ -99,4 +99,49 @@ void main() {
     expect(finance.transactions, isEmpty);
     expect(finance.accountBalance('account-1'), 1000);
   });
+
+  test('today transactions affect account balance only when settled', () {
+    final FinanceController finance = controllerWith();
+    final DateTime now = DateTime.now();
+    final DateTime today = DateTime(now.year, now.month, now.day, 10);
+
+    finance.addTransaction(
+      Transaction(
+        id: 'pending-today',
+        type: TransactionType.expense,
+        amount: 100,
+        categoryId: finance.categories.first.id,
+        accountId: 'account-1',
+        date: today,
+        isPaid: false,
+      ),
+    );
+    expect(finance.accountBalance('account-1'), 1000);
+
+    finance.addTransaction(
+      Transaction(
+        id: 'settled-today',
+        type: TransactionType.expense,
+        amount: 40,
+        categoryId: finance.categories.first.id,
+        accountId: 'account-1',
+        date: today,
+        isPaid: true,
+      ),
+    );
+    expect(finance.accountBalance('account-1'), 960);
+
+    finance.addTransaction(
+      Transaction(
+        id: 'future-transaction',
+        type: TransactionType.expense,
+        amount: 25,
+        categoryId: finance.categories.first.id,
+        accountId: 'account-1',
+        date: DateTime(now.year, now.month, now.day + 1),
+        isPaid: false,
+      ),
+    );
+    expect(finance.accountBalance('account-1'), 960);
+  });
 }

@@ -139,25 +139,16 @@ class FinanceController extends ChangeNotifier {
     return null;
   }
 
-  /// Saldo de uma conta: saldo inicial + lançamentos não futuros - valores
-  /// guardados nas metas com origem nesta conta.
+  /// Saldo de uma conta: saldo inicial + lançamentos efetivados não futuros
+  /// - valores guardados nas metas com origem nesta conta.
   double accountBalance(String id) {
     final Account? a = accountById(id);
     if (a == null) return 0;
-    final DateTime now = DateTime.now();
-    final DateTime endOfToday = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      23,
-      59,
-      59,
-    );
     double total = a.initialBalance;
     for (final Transaction t in transactions) {
       if (t.isGoalContribution) continue;
       if (t.accountId != id) continue;
-      if (t.date.isAfter(endOfToday)) continue;
+      if (!t.isSettled) continue;
       total += t.signedAmount;
     }
     for (final Goal g in goals) {
