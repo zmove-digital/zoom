@@ -57,7 +57,11 @@ class DashboardScreen extends StatelessWidget {
         onRefresh: () async {},
         child: ListView(
           padding: const EdgeInsets.fromLTRB(
-              _dashboardHorizontalPadding, 16, _dashboardHorizontalPadding, 120),
+            _dashboardHorizontalPadding,
+            16,
+            _dashboardHorizontalPadding,
+            120,
+          ),
           children: <Widget>[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -65,21 +69,24 @@ class DashboardScreen extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text('${_greeting()},',
-                        style: theme.textTheme.bodyMedium),
+                    Text('${_greeting()},', style: theme.textTheme.bodyMedium),
                     Text(
                       name.isEmpty ? 'jovem' : name,
-                      style: theme.textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ],
                 ),
                 CircleAvatar(
                   radius: 24,
-                  backgroundColor:
-                      theme.colorScheme.primary.withValues(alpha: 0.15),
-                  child: Icon(Icons.savings_rounded,
-                      color: theme.colorScheme.primary),
+                  backgroundColor: theme.colorScheme.primary.withValues(
+                    alpha: 0.15,
+                  ),
+                  child: Icon(
+                    Icons.savings_rounded,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ],
             ),
@@ -88,13 +95,19 @@ class DashboardScreen extends StatelessWidget {
               balance: balance,
               currencySymbol: sym,
               hidden: settings.settings.hideBalance,
-              onToggleHidden: () => settings
-                  .setHideBalance(!settings.settings.hideBalance),
+              onToggleHidden:
+                  () => settings.setHideBalance(!settings.settings.hideBalance),
             ),
             const SizedBox(height: 16),
             _primaryAction(context),
             const SizedBox(height: 12),
-            _accountsShortcut(context, finance, sym, theme),
+            _accountsShortcut(
+              context,
+              finance,
+              sym,
+              theme,
+              settings.settings.hideBalance,
+            ),
             const SizedBox(height: 16),
             Row(
               children: <Widget>[
@@ -106,10 +119,14 @@ class DashboardScreen extends StatelessWidget {
                     color: const Color(0xFF06D6A0),
                     hidden: settings.settings.hideBalance,
                     onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => const TransactionsScreen(
-                            initialType: TransactionType.income),
-                      ));
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder:
+                              (_) => const TransactionsScreen(
+                                initialType: TransactionType.income,
+                              ),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -122,10 +139,14 @@ class DashboardScreen extends StatelessWidget {
                     color: const Color(0xFFEF476F),
                     hidden: settings.settings.hideBalance,
                     onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => const TransactionsScreen(
-                            initialType: TransactionType.expense),
-                      ));
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder:
+                              (_) => const TransactionsScreen(
+                                initialType: TransactionType.expense,
+                              ),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -159,8 +180,11 @@ class DashboardScreen extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(22),
         onTap: () {
-          Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const TransactionEditorScreen()));
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const TransactionEditorScreen(),
+            ),
+          );
         },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -213,12 +237,18 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _accountsShortcut(BuildContext context, FinanceController finance,
-      String sym, ThemeData theme) {
+  Widget _accountsShortcut(
+    BuildContext context,
+    FinanceController finance,
+    String sym,
+    ThemeData theme,
+    bool hidden,
+  ) {
     return SectionCard(
       onTap: () {
-        Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => const AccountsScreen()));
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const AccountsScreen()));
       },
       child: Row(
         children: <Widget>[
@@ -228,21 +258,26 @@ class DashboardScreen extends StatelessWidget {
               color: theme.colorScheme.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.account_balance_wallet_outlined,
-                color: theme.colorScheme.primary),
+            child: Icon(
+              Icons.account_balance_wallet_outlined,
+              color: theme.colorScheme.primary,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Contas',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Contas',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 Text(
                   finance.accounts.isEmpty
                       ? 'Crie sua primeira conta'
-                      : '${finance.accounts.length} ${finance.accounts.length == 1 ? 'conta' : 'contas'} • ${Money.format(finance.totalBalance, '', symbol: sym)}',
+                      : '${finance.accounts.length} ${finance.accounts.length == 1 ? 'conta' : 'contas'} • ${hidden ? '••••••' : Money.format(finance.totalBalance, '', symbol: sym)}',
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -266,8 +301,11 @@ class DashboardScreen extends StatelessWidget {
                 icon: Icons.category_outlined,
                 color: const Color(0xFF4361EE),
                 onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const CategoriesScreen()));
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const CategoriesScreen(),
+                    ),
+                  );
                 },
               ),
             ),
@@ -279,8 +317,11 @@ class DashboardScreen extends StatelessWidget {
                 icon: Icons.donut_large_outlined,
                 color: const Color(0xFFF8961E),
                 onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const BudgetsScreen()));
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const BudgetsScreen(),
+                    ),
+                  );
                 },
               ),
             ),
@@ -296,8 +337,11 @@ class DashboardScreen extends StatelessWidget {
                 icon: Icons.flag_outlined,
                 color: const Color(0xFF9B5DE5),
                 onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const GoalsScreen()));
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const GoalsScreen(),
+                    ),
+                  );
                 },
               ),
             ),
@@ -309,8 +353,11 @@ class DashboardScreen extends StatelessWidget {
                 icon: Icons.alarm_outlined,
                 color: const Color(0xFF00BBF9),
                 onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const RemindersScreen()));
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const RemindersScreen(),
+                    ),
+                  );
                 },
               ),
             ),
@@ -345,8 +392,9 @@ class DashboardScreen extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -356,78 +404,101 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _budgetSection(
-      BuildContext context, FinanceController finance, String sym) {
+    BuildContext context,
+    FinanceController finance,
+    String sym,
+  ) {
     final ThemeData theme = Theme.of(context);
     final List<Budget> budgets = finance.budgetsForMonth(DateTime.now());
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text('Orçamentos do mês',
-            style:
-                theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          'Orçamentos do mês',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 10),
         SectionCard(
           child: Column(
-            children: budgets.map((Budget b) {
-              final Category? c = finance.categoryById(b.categoryId);
-              final double spent = finance.spentInCategory(b.categoryId, DateTime.now());
-              final double ratio =
-                  (b.limit <= 0 ? 0.0 : spent / b.limit).clamp(0.0, 1.5).toDouble();
-              final bool over = spent > b.limit;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
+            children:
+                budgets.map((Budget b) {
+                  final Category? c = finance.categoryById(b.categoryId);
+                  final double spent = finance.spentInCategory(
+                    b.categoryId,
+                    DateTime.now(),
+                  );
+                  final double ratio =
+                      (b.limit <= 0 ? 0.0 : spent / b.limit)
+                          .clamp(0.0, 1.5)
+                          .toDouble();
+                  final bool over = spent > b.limit;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        CategoryAvatar(category: c, size: 30),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(c?.name ?? 'Categoria',
-                              style: theme.textTheme.bodyMedium),
+                        Row(
+                          children: <Widget>[
+                            CategoryAvatar(category: c, size: 30),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                c?.name ?? 'Categoria',
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ),
+                            Text(
+                              '${Money.format(spent, '', symbol: sym)} / ${Money.format(b.limit, '', symbol: sym)}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color:
+                                    over
+                                        ? theme.colorScheme.error
+                                        : theme.colorScheme.outline,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '${Money.format(spent, '', symbol: sym)} / ${Money.format(b.limit, '', symbol: sym)}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: over
-                                ? theme.colorScheme.error
-                                : theme.colorScheme.outline,
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: ratio.clamp(0, 1).toDouble(),
+                            minHeight: 8,
+                            backgroundColor:
+                                theme.colorScheme.surfaceContainerHighest,
+                            color:
+                                over
+                                    ? theme.colorScheme.error
+                                    : (c?.color ?? theme.colorScheme.primary),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: ratio.clamp(0, 1).toDouble(),
-                        minHeight: 8,
-                        backgroundColor:
-                            theme.colorScheme.surfaceContainerHighest,
-                        color: over
-                            ? theme.colorScheme.error
-                            : (c?.color ?? theme.colorScheme.primary),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+                  );
+                }).toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget _goalsSection(BuildContext context, FinanceController finance,
-      String sym, ThemeData theme) {
+  Widget _goalsSection(
+    BuildContext context,
+    FinanceController finance,
+    String sym,
+    ThemeData theme,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text('Suas metas',
-            style:
-                theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          'Suas metas',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 10),
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
@@ -447,21 +518,31 @@ class DashboardScreen extends StatelessWidget {
                         children: <Widget>[
                           Row(
                             children: <Widget>[
-                              Icon(Icons.flag_rounded, color: g.color, size: 20),
+                              Icon(
+                                Icons.flag_rounded,
+                                color: g.color,
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: Text(g.name,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w700)),
+                                child: Text(
+                                  g.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
                           const Spacer(),
-                          Text('${(g.progress * 100).toStringAsFixed(0)}%',
-                              style: theme.textTheme.headlineSmall
-                                  ?.copyWith(fontWeight: FontWeight.w800)),
+                          Text(
+                            '${(g.progress * 100).toStringAsFixed(0)}%',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
@@ -492,29 +573,38 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _agendaShortcut(
-      BuildContext context, AgendaController agenda, ThemeData theme) {
+    BuildContext context,
+    AgendaController agenda,
+    ThemeData theme,
+  ) {
     final String? lastContent =
         agenda.entries.isEmpty ? null : agenda.sorted().first.title;
     return SectionCard(
       onTap: () {
-        Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => const AgendaEditorScreen()));
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const AgendaEditorScreen()),
+        );
       },
       child: Row(
         children: <Widget>[
           CircleAvatar(
             backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
-            child: Icon(Icons.emoji_emotions_rounded,
-                color: theme.colorScheme.primary),
+            child: Icon(
+              Icons.emoji_emotions_rounded,
+              color: theme.colorScheme.primary,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Seu diário',
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Seu diário',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 Text(
                   agenda.thisMonthCount == 0
                       ? 'Escreva como foi seu dia'
@@ -522,18 +612,24 @@ class DashboardScreen extends StatelessWidget {
                   style: theme.textTheme.bodySmall,
                 ),
                 if (lastContent != null && lastContent.isNotEmpty)
-                  Text('Último: $lastContent',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(fontStyle: FontStyle.italic)),
+                  Text(
+                    'Último: $lastContent',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
               ],
             ),
           ),
           IconButton(
             onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => const DiaryReportScreen()));
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const DiaryReportScreen(),
+                ),
+              );
             },
             tooltip: 'Relatório do diário',
             icon: const Icon(Icons.star_half_rounded),
@@ -544,8 +640,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _recentTransactions(BuildContext context, FinanceController finance,
-      String sym, ThemeData theme) {
+  Widget _recentTransactions(
+    BuildContext context,
+    FinanceController finance,
+    String sym,
+    ThemeData theme,
+  ) {
     final List<Transaction> recent = finance.filtered().take(5).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -553,13 +653,19 @@ class DashboardScreen extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
-            Text('Últimos lançamentos',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700)),
+            Text(
+              'Últimos lançamentos',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             TextButton(
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => const TransactionsScreen(embedded: true)));
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const TransactionsScreen(embedded: true),
+                  ),
+                );
               },
               child: const Text('Ver tudo'),
             ),
@@ -570,11 +676,15 @@ class DashboardScreen extends StatelessWidget {
             child: EmptyState(
               icon: Icons.receipt_long_outlined,
               title: 'Nenhum lançamento ainda',
-              message: 'Toque no + para registrar sua primeira receita ou despesa.',
+              message:
+                  'Toque no + para registrar sua primeira receita ou despesa.',
               action: FilledButton.icon(
                 onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => const TransactionEditorScreen()));
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const TransactionEditorScreen(),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Adicionar lançamento'),
@@ -585,22 +695,26 @@ class DashboardScreen extends StatelessWidget {
           SectionCard(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Column(
-              children: recent
-                  .map(
-                    (Transaction t) => TransactionTile(
-                      transaction: t,
-                      category: finance.categoryById(t.categoryId),
-                      currencySymbol: sym,
-                      accountName: finance.accountById(t.accountId)?.name,
-                      onTap: () {
-                        Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => TransactionEditorScreen(existing: t),
-                        ));
-                      },
-                      onSettle: () => finance.settleTransaction(t.id),
-                    ),
-                  )
-                  .toList(),
+              children:
+                  recent
+                      .map(
+                        (Transaction t) => TransactionTile(
+                          transaction: t,
+                          category: finance.categoryById(t.categoryId),
+                          currencySymbol: sym,
+                          accountName: finance.accountById(t.accountId)?.name,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder:
+                                    (_) => TransactionEditorScreen(existing: t),
+                              ),
+                            );
+                          },
+                          onSettle: () => finance.settleTransaction(t.id),
+                        ),
+                      )
+                      .toList(),
             ),
           ),
       ],
