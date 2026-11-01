@@ -13,16 +13,12 @@ import '../data/storage/local_database.dart';
 
 class FinanceController extends ChangeNotifier {
   FinanceController(this._db) {
-    transactions = _db
-        .listOf(DbKeys.transactions)
-        .map(Transaction.fromJson)
-        .toList();
-    categories =
-        _db.listOf(DbKeys.categories).map(Category.fromJson).toList();
+    transactions =
+        _db.listOf(DbKeys.transactions).map(Transaction.fromJson).toList();
+    categories = _db.listOf(DbKeys.categories).map(Category.fromJson).toList();
     budgets = _db.listOf(DbKeys.budgets).map(Budget.fromJson).toList();
     goals = _db.listOf(DbKeys.goals).map(Goal.fromJson).toList();
-    accounts =
-        _db.listOf(DbKeys.accounts).map(Account.fromJson).toList();
+    accounts = _db.listOf(DbKeys.accounts).map(Account.fromJson).toList();
 
     if (categories.isEmpty) {
       categories = SeedData.defaultCategories();
@@ -34,6 +30,7 @@ class FinanceController extends ChangeNotifier {
     }
 
     _migrateLegacySettlement();
+    _migrateGoalContributions();
   }
 
   final LocalDatabase _db;
@@ -43,15 +40,28 @@ class FinanceController extends ChangeNotifier {
   late List<Goal> goals;
   late List<Account> accounts;
 
-  String get currencySymbol =>
-      kCurrencySymbols['BRL'] ?? 'R\$';
+  String get currencySymbol => kCurrencySymbols['BRL'] ?? 'R\$';
 
   Category? categoryById(String id) {
+    if (id == goalContributionCategoryId) {
+      return Category(
+        id: goalContributionCategoryId,
+        name: 'Meta',
+        kind: CategoryKind.expense,
+        colorHex: '06D6A0',
+        iconCodePoint: Icons.flag_rounded.codePoint,
+      );
+    }
     for (final Category c in categories) {
       if (c.id == id) return c;
     }
     return null;
   }
+
+  List<Category> get transactionCategories => <Category>[
+    ...categories,
+    categoryById(goalContributionCategoryId)!,
+  ];
 
   List<Category> get incomeCategories =>
       categories.where((Category c) => c.supportsIncome).toList();
@@ -76,24 +86,31 @@ class FinanceController extends ChangeNotifier {
       result = result.where((Transaction t) => !t.date.isBefore(from));
     }
     if (to != null) {
-      final DateTime inclusive = DateTime(to.year, to.month, to.day, 23, 59, 59);
+      final DateTime inclusive = DateTime(
+        to.year,
+        to.month,
+        to.day,
+        23,
+        59,
+        59,
+      );
       result = result.where((Transaction t) => !t.date.isAfter(inclusive));
     }
     if (search != null && search.trim().isNotEmpty) {
       final String q = search.toLowerCase();
-      result = result.where((Transaction t) =>
-          t.description.toLowerCase().contains(q) ||
-          t.notes.toLowerCase().contains(q));
+      result = result.where(
+        (Transaction t) =>
+            t.description.toLowerCase().contains(q) ||
+            t.notes.toLowerCase().contains(q),
+      );
     }
-    final List<Transaction> list = result.toList()
-      ..sort((Transaction a, Transaction b) => b.date.compareTo(a.date));
+    final List<Transaction> list =
+        result.toList()
+          ..sort((Transaction a, Transaction b) => b.date.compareTo(a.date));
     return list;
   }
 
-  double sumFor(
-    Iterable<Transaction> list,
-    TransactionType type,
-  ) {
+  double sumFor(Iterable<Transaction> list, TransactionType type) {
     double total = 0;
     for (final Transaction t in list) {
       if (t.type == type) total += t.amount;
@@ -128,10 +145,17 @@ class FinanceController extends ChangeNotifier {
     final Account? a = accountById(id);
     if (a == null) return 0;
     final DateTime now = DateTime.now();
-    final DateTime endOfToday =
-        DateTime(now.year, now.month, now.day, 23, 59, 59);
+    final DateTime endOfToday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      23,
+      59,
+      59,
+    );
     double total = a.initialBalance;
     for (final Transaction t in transactions) {
+      if (t.isGoalContribution) continue;
       if (t.accountId != id) continue;
       if (t.date.isAfter(endOfToday)) continue;
       total += t.signedAmount;
@@ -156,7 +180,9 @@ class FinanceController extends ChangeNotifier {
   double get incomeThisMonth {
     final DateTime now = DateTime.now();
     return sumFor(
-      transactions.where((Transaction t) => DateHelpers.isSameMonth(t.date, now)),
+      transactions.where(
+        (Transaction t) => DateHelpers.isSameMonth(t.date, now),
+      ),
       TransactionType.income,
     );
   }
@@ -164,7 +190,9 @@ class FinanceController extends ChangeNotifier {
   double get expenseThisMonth {
     final DateTime now = DateTime.now();
     return sumFor(
-      transactions.where((Transaction t) => DateHelpers.isSameMonth(t.date, now)),
+      transactions.where(
+        (Transaction t) => DateHelpers.isSameMonth(t.date, now),
+      ),
       TransactionType.expense,
     );
   }
@@ -187,8 +215,12 @@ class FinanceController extends ChangeNotifier {
       t.recurrenceCount = repeatCount;
       transactions.add(t);
       transactions.addAll(
-        _buildOccurrences(t, repeat, groupId,
-            count: _extraOccurrences(repeatCount, 1)),
+        _buildOccurrences(
+          t,
+          repeat,
+          groupId,
+          count: _extraOccurrences(repeatCount, 1),
+        ),
       );
     }
     _persistTransactions();
@@ -196,6 +228,10 @@ class FinanceController extends ChangeNotifier {
   }
 
   void updateTransaction(Transaction t) {
+    if (t.isGoalContribution) {
+      updateGoalContribution(t);
+      return;
+    }
     final int index = transactions.indexWhere((Transaction e) => e.id == t.id);
     if (index >= 0) {
       transactions[index] = t;
@@ -205,6 +241,13 @@ class FinanceController extends ChangeNotifier {
   }
 
   void deleteTransaction(String id) {
+    final int index = transactions.indexWhere((Transaction t) => t.id == id);
+    if (index < 0) return;
+    final Transaction transaction = transactions[index];
+    if (transaction.isGoalContribution) {
+      _removeGoalContribution(transaction);
+      return;
+    }
     transactions.removeWhere((Transaction t) => t.id == id);
     _persistTransactions();
     notifyListeners();
@@ -218,7 +261,13 @@ class FinanceController extends ChangeNotifier {
     final DateTime now = DateTime.now();
     final Transaction t = transactions[index];
     if (t.isFuture) {
-      t.date = DateTime(now.year, now.month, now.day, t.date.hour, t.date.minute);
+      t.date = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        t.date.hour,
+        t.date.minute,
+      );
     }
     t.isPaid = true;
     transactions[index] = t;
@@ -231,8 +280,7 @@ class FinanceController extends ChangeNotifier {
   List<Transaction> get overdueTransactions {
     final List<Transaction> list =
         transactions.where((Transaction t) => t.isOverdue).toList()
-          ..sort((Transaction a, Transaction b) =>
-              a.date.compareTo(b.date));
+          ..sort((Transaction a, Transaction b) => a.date.compareTo(b.date));
     return list;
   }
 
@@ -252,10 +300,14 @@ class FinanceController extends ChangeNotifier {
     if (changed) _persistTransactions();
   }
 
-  void makeRecurringFrom(Transaction anchor, RecurrencePeriod repeat,
-      {int? repeatCount}) {
-    final int index =
-        transactions.indexWhere((Transaction e) => e.id == anchor.id);
+  void makeRecurringFrom(
+    Transaction anchor,
+    RecurrencePeriod repeat, {
+    int? repeatCount,
+  }) {
+    final int index = transactions.indexWhere(
+      (Transaction e) => e.id == anchor.id,
+    );
     if (index < 0) return;
     final String groupId = newId();
     anchor.recurrenceId = groupId;
@@ -263,8 +315,12 @@ class FinanceController extends ChangeNotifier {
     anchor.recurrenceCount = repeatCount;
     transactions[index] = anchor;
     transactions.addAll(
-      _buildOccurrences(anchor, repeat, groupId,
-          count: _extraOccurrences(repeatCount, 1)),
+      _buildOccurrences(
+        anchor,
+        repeat,
+        groupId,
+        count: _extraOccurrences(repeatCount, 1),
+      ),
     );
     _persistTransactions();
     notifyListeners();
@@ -276,8 +332,9 @@ class FinanceController extends ChangeNotifier {
     RecurrencePeriod? repeat,
     int? repeatCount,
   }) {
-    final int index =
-        transactions.indexWhere((Transaction e) => e.id == anchor.id);
+    final int index = transactions.indexWhere(
+      (Transaction e) => e.id == anchor.id,
+    );
     if (index < 0) return;
     final Transaction original = transactions[index];
     final String? groupId = original.recurrenceId;
@@ -292,10 +349,12 @@ class FinanceController extends ChangeNotifier {
       return;
     }
 
-    transactions.removeWhere((Transaction e) =>
-        e.recurrenceId == groupId &&
-        e.id != anchor.id &&
-        e.date.isAfter(anchor.date));
+    transactions.removeWhere(
+      (Transaction e) =>
+          e.recurrenceId == groupId &&
+          e.id != anchor.id &&
+          e.date.isAfter(anchor.date),
+    );
 
     if (repeat == null) {
       for (final Transaction e in transactions) {
@@ -313,19 +372,27 @@ class FinanceController extends ChangeNotifier {
       anchor.recurrence = repeat;
       anchor.recurrenceCount = repeatCount;
     }
-    final int anchorIndex =
-        transactions.indexWhere((Transaction e) => e.id == anchor.id);
+    final int anchorIndex = transactions.indexWhere(
+      (Transaction e) => e.id == anchor.id,
+    );
     transactions[anchorIndex] = anchor;
     if (repeat != null) {
       // O número de repetições é do total da série: o que já ficou para trás
       // (incluindo o próprio lançamento) conta.
-      final int existing = transactions
-          .where((Transaction e) =>
-              e.recurrenceId == groupId && !e.date.isAfter(anchor.date))
-          .length;
+      final int existing =
+          transactions
+              .where(
+                (Transaction e) =>
+                    e.recurrenceId == groupId && !e.date.isAfter(anchor.date),
+              )
+              .length;
       transactions.addAll(
-        _buildOccurrences(anchor, repeat, groupId,
-            count: _extraOccurrences(repeatCount, existing)),
+        _buildOccurrences(
+          anchor,
+          repeat,
+          groupId,
+          count: _extraOccurrences(repeatCount, existing),
+        ),
       );
       for (final Transaction e in transactions) {
         if (e.recurrenceId == groupId) e.recurrenceCount = repeatCount;
@@ -342,8 +409,10 @@ class FinanceController extends ChangeNotifier {
     if (!includeFuture || t.recurrenceId == null) {
       transactions.removeAt(index);
     } else {
-      transactions.removeWhere((Transaction e) =>
-          e.recurrenceId == t.recurrenceId && !e.date.isBefore(t.date));
+      transactions.removeWhere(
+        (Transaction e) =>
+            e.recurrenceId == t.recurrenceId && !e.date.isBefore(t.date),
+      );
     }
     _persistTransactions();
     notifyListeners();
@@ -373,21 +442,23 @@ class FinanceController extends ChangeNotifier {
       until: count == null ? _recurrenceEnd(base.date) : null,
     );
     return dates
-        .map((DateTime date) => Transaction(
-              id: newId(),
-              type: base.type,
-              amount: base.amount,
-              categoryId: base.categoryId,
-              accountId: base.accountId,
-              date: date,
-              description: base.description,
-              notes: base.notes,
-              // Ocorrências futuras nascem pendentes: a efetivação é manual.
-              isPaid: false,
-              recurrenceId: groupId,
-              recurrence: period,
-              recurrenceCount: base.recurrenceCount,
-            ))
+        .map(
+          (DateTime date) => Transaction(
+            id: newId(),
+            type: base.type,
+            amount: base.amount,
+            categoryId: base.categoryId,
+            accountId: base.accountId,
+            date: date,
+            description: base.description,
+            notes: base.notes,
+            // Ocorrências futuras nascem pendentes: a efetivação é manual.
+            isPaid: false,
+            recurrenceId: groupId,
+            recurrence: period,
+            recurrenceCount: base.recurrenceCount,
+          ),
+        )
         .toList();
   }
 
@@ -419,10 +490,12 @@ class FinanceController extends ChangeNotifier {
 
   double spentInCategory(String categoryId, DateTime month) {
     return sumFor(
-      transactions.where((Transaction t) =>
-          t.categoryId == categoryId &&
-          t.type == TransactionType.expense &&
-          DateHelpers.isSameMonth(t.date, month)),
+      transactions.where(
+        (Transaction t) =>
+            t.categoryId == categoryId &&
+            t.type == TransactionType.expense &&
+            DateHelpers.isSameMonth(t.date, month),
+      ),
       TransactionType.expense,
     );
   }
@@ -454,7 +527,12 @@ class FinanceController extends ChangeNotifier {
       budgets[index] = budgets[index].copyWith(limit: limit);
     } else {
       budgets.add(
-        Budget(id: newId(), categoryId: categoryId, limit: limit, monthKey: key),
+        Budget(
+          id: newId(),
+          categoryId: categoryId,
+          limit: limit,
+          monthKey: key,
+        ),
       );
     }
     _persistBudgets();
@@ -478,7 +556,9 @@ class FinanceController extends ChangeNotifier {
 
   void deleteGoal(String id) {
     goals.removeWhere((Goal g) => g.id == id);
+    transactions.removeWhere((Transaction t) => t.goalId == id);
     _persistGoals();
+    _persistTransactions();
     notifyListeners();
   }
 
@@ -507,16 +587,20 @@ class FinanceController extends ChangeNotifier {
       if (t.accountId == id) t.accountId = fallback;
     }
     for (final Goal g in goals) {
-      g.contributions = g.contributions
-          .map((GoalContribution c) => c.accountId == id
-              ? GoalContribution(
-                  id: c.id,
-                  accountId: fallback,
-                  amount: c.amount,
-                  date: c.date,
-                )
-              : c)
-          .toList();
+      g.contributions =
+          g.contributions
+              .map(
+                (GoalContribution c) =>
+                    c.accountId == id
+                        ? GoalContribution(
+                          id: c.id,
+                          accountId: fallback,
+                          amount: c.amount,
+                          date: c.date,
+                        )
+                        : c,
+              )
+              .toList();
     }
     _persistTransactions();
     _persistAccounts();
@@ -528,17 +612,101 @@ class FinanceController extends ChangeNotifier {
     final int index = goals.indexWhere((Goal g) => g.id == id);
     if (index < 0) return;
     final Goal g = goals[index];
-    g.contributions = <GoalContribution>[
-      ...g.contributions,
-      GoalContribution(
-        id: newId(),
-        accountId: accountId,
-        amount: Money.round2(amount),
-      ),
-    ];
+    final GoalContribution contribution = GoalContribution(
+      id: newId(),
+      accountId: accountId,
+      amount: Money.round2(amount),
+    );
+    g.contributions = <GoalContribution>[...g.contributions, contribution];
     goals[index] = g;
+    transactions.add(_transactionForContribution(g, contribution));
     _persistGoals();
+    _persistTransactions();
     notifyListeners();
+  }
+
+  bool updateGoalContribution(Transaction transaction) {
+    if (!transaction.isGoalContribution ||
+        transaction.amount <= 0 ||
+        transaction.type != TransactionType.expense ||
+        transaction.categoryId != goalContributionCategoryId) {
+      return false;
+    }
+    final int goalIndex = goals.indexWhere(
+      (Goal g) => g.id == transaction.goalId,
+    );
+    final int transactionIndex = transactions.indexWhere(
+      (Transaction t) => t.id == transaction.id,
+    );
+    if (goalIndex < 0 || transactionIndex < 0) return false;
+    final Goal goal = goals[goalIndex];
+    final int contributionIndex = goal.contributions.indexWhere(
+      (GoalContribution c) => c.id == transaction.goalContributionId,
+    );
+    if (contributionIndex < 0) return false;
+
+    final GoalContribution contribution = goal.contributions[contributionIndex];
+    final double amount = Money.round2(transaction.amount);
+    goal.contributions[contributionIndex] = GoalContribution(
+      id: contribution.id,
+      accountId: contribution.accountId,
+      amount: amount,
+      date: contribution.date,
+    );
+    transactions[transactionIndex] = transaction.copyWith(amount: amount);
+    _persistGoals();
+    _persistTransactions();
+    notifyListeners();
+    return true;
+  }
+
+  void _removeGoalContribution(Transaction transaction) {
+    transactions.removeWhere((Transaction t) => t.id == transaction.id);
+    final int goalIndex = goals.indexWhere(
+      (Goal g) => g.id == transaction.goalId,
+    );
+    if (goalIndex >= 0) {
+      goals[goalIndex].contributions.removeWhere(
+        (GoalContribution c) => c.id == transaction.goalContributionId,
+      );
+      _persistGoals();
+    }
+    _persistTransactions();
+    notifyListeners();
+  }
+
+  Transaction _transactionForContribution(
+    Goal goal,
+    GoalContribution contribution,
+  ) => Transaction(
+    id: 'goal_${goal.id}_${contribution.id}',
+    type: TransactionType.expense,
+    amount: contribution.amount,
+    categoryId: goalContributionCategoryId,
+    date: contribution.date,
+    accountId: contribution.accountId,
+    description: goal.name,
+    isPaid: true,
+    goalId: goal.id,
+    goalContributionId: contribution.id,
+  );
+
+  void _migrateGoalContributions() {
+    bool changed = false;
+    final Set<String> linkedContributions =
+        transactions
+            .where((Transaction t) => t.isGoalContribution)
+            .map((Transaction t) => '${t.goalId}\u0000${t.goalContributionId}')
+            .toSet();
+    for (final Goal goal in goals) {
+      for (final GoalContribution contribution in goal.contributions) {
+        final String key = '${goal.id}\u0000${contribution.id}';
+        if (!linkedContributions.add(key)) continue;
+        transactions.add(_transactionForContribution(goal, contribution));
+        changed = true;
+      }
+    }
+    if (changed) _persistTransactions();
   }
 
   Map<String, double> totalsByCategory(
@@ -559,7 +727,10 @@ class FinanceController extends ChangeNotifier {
   Map<String, double> expenseByCategory(DateTime from, DateTime to) =>
       totalsByCategory(from, to, type: TransactionType.expense);
 
-  List<MapEntry<DateTime, double>> monthlySeries(int months, {TransactionType? type}) {
+  List<MapEntry<DateTime, double>> monthlySeries(
+    int months, {
+    TransactionType? type,
+  }) {
     final DateTime now = DateTime.now();
     final List<MapEntry<DateTime, double>> series =
         <MapEntry<DateTime, double>>[];
@@ -587,6 +758,7 @@ class FinanceController extends ChangeNotifier {
     this.budgets = budgets;
     this.goals = goals;
     this.accounts = accounts;
+    _migrateGoalContributions();
     _persistTransactions();
     _persistCategories();
     _persistBudgets();
@@ -595,22 +767,29 @@ class FinanceController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _persistTransactions() =>
-      _db.setList(DbKeys.transactions, transactions.map((Transaction e) => e.toJson()).toList());
-  void _persistCategories() =>
-      _db.setList(DbKeys.categories, categories.map((Category e) => e.toJson()).toList());
-  void _persistBudgets() =>
-      _db.setList(DbKeys.budgets, budgets.map((Budget e) => e.toJson()).toList());
+  void _persistTransactions() => _db.setList(
+    DbKeys.transactions,
+    transactions.map((Transaction e) => e.toJson()).toList(),
+  );
+  void _persistCategories() => _db.setList(
+    DbKeys.categories,
+    categories.map((Category e) => e.toJson()).toList(),
+  );
+  void _persistBudgets() => _db.setList(
+    DbKeys.budgets,
+    budgets.map((Budget e) => e.toJson()).toList(),
+  );
   void _persistGoals() =>
       _db.setList(DbKeys.goals, goals.map((Goal e) => e.toJson()).toList());
-  void _persistAccounts() =>
-      _db.setList(DbKeys.accounts, accounts.map((Account e) => e.toJson()).toList());
+  void _persistAccounts() => _db.setList(
+    DbKeys.accounts,
+    accounts.map((Account e) => e.toJson()).toList(),
+  );
 
   void reload() {
     transactions =
         _db.listOf(DbKeys.transactions).map(Transaction.fromJson).toList();
-    categories =
-        _db.listOf(DbKeys.categories).map(Category.fromJson).toList();
+    categories = _db.listOf(DbKeys.categories).map(Category.fromJson).toList();
     budgets = _db.listOf(DbKeys.budgets).map(Budget.fromJson).toList();
     goals = _db.listOf(DbKeys.goals).map(Goal.fromJson).toList();
     accounts = _db.listOf(DbKeys.accounts).map(Account.fromJson).toList();
@@ -623,6 +802,7 @@ class FinanceController extends ChangeNotifier {
       _persistAccounts();
     }
     _migrateLegacySettlement();
+    _migrateGoalContributions();
     notifyListeners();
   }
 }

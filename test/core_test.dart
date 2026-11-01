@@ -52,6 +52,7 @@ void main() {
       expect(restored.amount, 150.5);
       expect(restored.description, 'Freela');
       expect(restored.signedAmount, 150.5);
+      expect(restored.isGoalContribution, isFalse);
     });
 
     test('despesa tem valor negativo assinado', () {
@@ -142,8 +143,11 @@ void main() {
 
     test('recurrenceDates respeita quantas vezes o usuário escolheu', () {
       expect(
-        recurrenceDates(DateTime(2026, 5, 10), RecurrencePeriod.monthly,
-            count: 3),
+        recurrenceDates(
+          DateTime(2026, 5, 10),
+          RecurrencePeriod.monthly,
+          count: 3,
+        ),
         <DateTime>[
           DateTime(2026, 6, 10),
           DateTime(2026, 7, 10),
@@ -151,8 +155,11 @@ void main() {
         ],
       );
       expect(
-        recurrenceDates(DateTime(2026, 5, 10), RecurrencePeriod.weekly,
-            count: 2),
+        recurrenceDates(
+          DateTime(2026, 5, 10),
+          RecurrencePeriod.weekly,
+          count: 2,
+        ),
         <DateTime>[DateTime(2026, 5, 17), DateTime(2026, 5, 24)],
       );
     });
@@ -160,21 +167,30 @@ void main() {
     test('recurrenceDates sem repetição retorna vazio', () {
       // count é quantas ocorrências gerar além da data base: 0 = nenhuma.
       expect(
-        recurrenceDates(DateTime(2026, 5, 10), RecurrencePeriod.monthly,
-            count: 0),
+        recurrenceDates(
+          DateTime(2026, 5, 10),
+          RecurrencePeriod.monthly,
+          count: 0,
+        ),
         isEmpty,
       );
       expect(
-        recurrenceDates(DateTime(2026, 5, 10), RecurrencePeriod.monthly,
-            count: 1),
+        recurrenceDates(
+          DateTime(2026, 5, 10),
+          RecurrencePeriod.monthly,
+          count: 1,
+        ),
         <DateTime>[DateTime(2026, 6, 10)],
       );
     });
 
     test('recurrenceDates para no fim quando não há número escolhido', () {
       expect(
-        recurrenceDates(DateTime(2026, 5, 10), RecurrencePeriod.monthly,
-            until: DateTime(2026, 7, 31)),
+        recurrenceDates(
+          DateTime(2026, 5, 10),
+          RecurrencePeriod.monthly,
+          until: DateTime(2026, 7, 31),
+        ),
         <DateTime>[DateTime(2026, 6, 10), DateTime(2026, 7, 10)],
       );
     });
@@ -312,23 +328,33 @@ void main() {
       final List<Goal> goals = <Goal>[viajem, celular];
       expect(
         Goal.contributionsBetween(
-            goals, DateTime(2026, 5, 1), DateTime(2026, 5, 31)),
+          goals,
+          DateTime(2026, 5, 1),
+          DateTime(2026, 5, 31),
+        ),
         150,
       );
       expect(
         Goal.contributionsBetween(
-            goals, DateTime(2026, 6, 1), DateTime(2026, 6, 30)),
+          goals,
+          DateTime(2026, 6, 1),
+          DateTime(2026, 6, 30),
+        ),
         200,
       );
       expect(
         Goal.contributionsBetween(
-            goals, DateTime(2026, 1, 1), DateTime(2026, 12, 31)),
+          goals,
+          DateTime(2026, 1, 1),
+          DateTime(2026, 12, 31),
+        ),
         350,
       );
     });
   });
 
-  group('AgendaEntry', () {    test('json roundtrip preserva mood e tags', () {
+  group('AgendaEntry', () {
+    test('json roundtrip preserva mood e tags', () {
       final AgendaEntry entry = AgendaEntry(
         id: 'e1',
         date: DateTime(2026, 5, 1),

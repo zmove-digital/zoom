@@ -84,8 +84,13 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     );
     if (picked != null) {
       setState(() {
-        _date = DateTime(picked.year, picked.month, picked.day, _date.hour,
-            _date.minute);
+        _date = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _date.hour,
+          _date.minute,
+        );
       });
     }
   }
@@ -104,8 +109,11 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     final RecurrencePeriod? period = _repeat;
     if (period == null) return '';
     final int total = _repeatCountValue;
-    final List<DateTime> dates =
-        recurrenceDates(_date, period, count: total - 1);
+    final List<DateTime> dates = recurrenceDates(
+      _date,
+      period,
+      count: total - 1,
+    );
     if (dates.isEmpty) return 'Sem repetição — só este lançamento';
     return '$total lançamentos: de ${DateHelpers.full.format(_date)} '
         'até ${DateHelpers.full.format(dates.last)}';
@@ -195,10 +203,12 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     final bool income = _type == TransactionType.income;
     final String doneLabel = income ? 'Recebido' : 'Pago';
     final DateTime now = DateTime.now();
-    final bool isFuture =
-        _date.isAfter(DateTime(now.year, now.month, now.day, 23, 59, 59));
-    final bool isPastDue =
-        _date.isBefore(DateTime(now.year, now.month, now.day));
+    final bool isFuture = _date.isAfter(
+      DateTime(now.year, now.month, now.day, 23, 59, 59),
+    );
+    final bool isPastDue = _date.isBefore(
+      DateTime(now.year, now.month, now.day),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,17 +218,24 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
           Text(
             'Data futura: por enquanto consta como pendente. '
             'Efetivar move a data para hoje.',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.outline),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
-            onPressed: () => setState(() {
-              final DateTime n = DateTime.now();
-              _date =
-                  DateTime(n.year, n.month, n.day, _date.hour, _date.minute);
-              _paid = true;
-            }),
+            onPressed:
+                () => setState(() {
+                  final DateTime n = DateTime.now();
+                  _date = DateTime(
+                    n.year,
+                    n.month,
+                    n.day,
+                    _date.hour,
+                    _date.minute,
+                  );
+                  _paid = true;
+                }),
             icon: const Icon(Icons.check_circle_outline),
             label: const Text('Efetivar agora'),
           ),
@@ -253,7 +270,24 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
       );
       return;
     }
-    final String catId = _categoryId ??
+    final Transaction? existing = widget.existing;
+    if (existing?.isGoalContribution == true) {
+      if (!finance.updateGoalContribution(existing!.copyWith(amount: value))) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível atualizar a meta')),
+        );
+        return;
+      }
+      await sound.playTap(
+        path: settings.settings.tapSoundPath,
+        enabled: settings.settings.soundEnabled,
+        haptics: settings.settings.hapticsEnabled,
+      );
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+    final String catId =
+        _categoryId ??
         (_categories(finance).isNotEmpty ? _categories(finance).first.id : '');
     if (catId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -265,9 +299,9 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     final String accountId =
         _accountId ?? (accounts.isNotEmpty ? accounts.first.id : '');
     if (accountId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Crie uma conta primeiro')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Crie uma conta primeiro')));
       return;
     }
 
@@ -296,8 +330,11 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
         if (_repeat == null) {
           finance.updateTransaction(tx);
         } else {
-          finance.makeRecurringFrom(tx, _repeat!,
-              repeatCount: _repeatCountValue);
+          finance.makeRecurringFrom(
+            tx,
+            _repeat!,
+            repeatCount: _repeatCountValue,
+          );
         }
       } else {
         final RecurrenceScope? scope = await showEditScopeDialog(context);
@@ -344,9 +381,10 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
     if (e == null || e.recurrenceId == null || e.recurrenceCount != null) {
       return;
     }
-    final int count = finance.transactions
-        .where((Transaction t) => t.recurrenceId == e.recurrenceId)
-        .length;
+    final int count =
+        finance.transactions
+            .where((Transaction t) => t.recurrenceId == e.recurrenceId)
+            .length;
     if (count > 0) _repeatCount.text = '$count';
   }
 
@@ -372,7 +410,11 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.surface,
-        title: Text(_isEditing ? 'Editar lançamento' : 'Novo lançamento'),
+        title: Text(
+          widget.existing?.isGoalContribution == true
+              ? 'Editar Meta'
+              : (_isEditing ? 'Editar lançamento' : 'Novo lançamento'),
+        ),
         actions: <Widget>[
           if (_isEditing)
             IconButton(
@@ -385,32 +427,39 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         children: <Widget>[
-          SegmentedButton<TransactionType>(
-            segments: const <ButtonSegment<TransactionType>>[
-              ButtonSegment<TransactionType>(
-                value: TransactionType.expense,
-                label: Text('Despesa'),
-                icon: Icon(Icons.arrow_downward),
-              ),
-              ButtonSegment<TransactionType>(
-                value: TransactionType.income,
-                label: Text('Receita'),
-                icon: Icon(Icons.arrow_upward),
-              ),
-            ],
-            selected: <TransactionType>{_type},
-            onSelectionChanged: (Set<TransactionType> value) {
-              setState(() {
-                _type = value.first;
-                _categoryId = null;
-              });
-            },
-          ),
+          if (widget.existing?.isGoalContribution == true)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.flag_rounded),
+              title: const Text('Meta'),
+              subtitle: Text(_description.text),
+            )
+          else
+            SegmentedButton<TransactionType>(
+              segments: const <ButtonSegment<TransactionType>>[
+                ButtonSegment<TransactionType>(
+                  value: TransactionType.expense,
+                  label: Text('Despesa'),
+                  icon: Icon(Icons.arrow_downward),
+                ),
+                ButtonSegment<TransactionType>(
+                  value: TransactionType.income,
+                  label: Text('Receita'),
+                  icon: Icon(Icons.arrow_upward),
+                ),
+              ],
+              selected: <TransactionType>{_type},
+              onSelectionChanged: (Set<TransactionType> value) {
+                setState(() {
+                  _type = value.first;
+                  _categoryId = null;
+                });
+              },
+            ),
           const SizedBox(height: 20),
           TextField(
             controller: _amount,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: <TextInputFormatter>[
               FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
             ],
@@ -422,89 +471,94 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
             style: theme.textTheme.headlineSmall,
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            initialValue: _categoryId,
-            decoration: const InputDecoration(
-              labelText: 'Categoria',
-              prefixIcon: Icon(Icons.category_outlined),
+          if (widget.existing?.isGoalContribution != true)
+            DropdownButtonFormField<String>(
+              initialValue: _categoryId,
+              decoration: const InputDecoration(
+                labelText: 'Categoria',
+                prefixIcon: Icon(Icons.category_outlined),
+              ),
+              items:
+                  cats
+                      .map(
+                        (Category c) => DropdownMenuItem<String>(
+                          value: c.id,
+                          child: Row(
+                            children: <Widget>[
+                              Icon(c.icon, size: 18, color: c.color),
+                              const SizedBox(width: 8),
+                              Text(c.name),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+              onChanged: (String? v) => setState(() => _categoryId = v),
             ),
-            items: cats
-                .map(
-                  (Category c) => DropdownMenuItem<String>(
-                    value: c.id,
-                    child: Row(
-                      children: <Widget>[
-                        Icon(c.icon, size: 18, color: c.color),
-                        const SizedBox(width: 8),
-                        Text(c.name),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-            onChanged: (String? v) => setState(() => _categoryId = v),
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            initialValue: _accountId,
-            decoration: const InputDecoration(
-              labelText: 'Conta',
-              prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+          if (widget.existing?.isGoalContribution != true) ...<Widget>[
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _accountId,
+              decoration: const InputDecoration(
+                labelText: 'Conta',
+                prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+              ),
+              items:
+                  accounts
+                      .map(
+                        (Account a) => DropdownMenuItem<String>(
+                          value: a.id,
+                          child: Row(
+                            children: <Widget>[
+                              Icon(a.icon, size: 18, color: a.color),
+                              const SizedBox(width: 8),
+                              Text(a.name),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+              onChanged: (String? v) => setState(() => _accountId = v),
             ),
-            items: accounts
-                .map(
-                  (Account a) => DropdownMenuItem<String>(
-                    value: a.id,
-                    child: Row(
-                      children: <Widget>[
-                        Icon(a.icon, size: 18, color: a.color),
-                        const SizedBox(width: 8),
-                        Text(a.name),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-            onChanged: (String? v) => setState(() => _accountId = v),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _description,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Descrição',
-              prefixIcon: Icon(Icons.edit_outlined),
-            ),
-          ),
-          const SizedBox(height: 16),
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: BorderSide(
-                color: theme.colorScheme.outline.withValues(alpha: 0.3),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _description,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Descrição',
+                prefixIcon: Icon(Icons.edit_outlined),
               ),
             ),
-            leading: const Icon(Icons.event_outlined),
-            title: const Text('Data'),
-            subtitle: Text(DateHelpers.full.format(_date)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _pickDate,
-          ),
-          const SizedBox(height: 16),
-          _settlementSection(theme),
-          const SizedBox(height: 16),
-          _repeatSelector(theme),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _notes,
-            maxLines: 3,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Observações (opcional)',
-              alignLabelWithHint: true,
+            const SizedBox(height: 16),
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                ),
+              ),
+              leading: const Icon(Icons.event_outlined),
+              title: const Text('Data'),
+              subtitle: Text(DateHelpers.full.format(_date)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _pickDate,
             ),
-          ),
+            const SizedBox(height: 16),
+            _settlementSection(theme),
+            const SizedBox(height: 16),
+            _repeatSelector(theme),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _notes,
+              maxLines: 3,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Observações (opcional)',
+                alignLabelWithHint: true,
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,

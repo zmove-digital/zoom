@@ -1,5 +1,7 @@
 enum TransactionType { income, expense }
 
+const String goalContributionCategoryId = '__goal_contribution__';
+
 TransactionType transactionTypeFromName(String name) {
   return TransactionType.values.firstWhere(
     (TransactionType t) => t.name == name,
@@ -87,6 +89,8 @@ class Transaction {
     this.recurrenceId,
     this.recurrence,
     this.recurrenceCount,
+    this.goalId,
+    this.goalContributionId,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -107,9 +111,14 @@ class Transaction {
   /// Quantos lançamentos a série tem ao todo (o primeiro incluído).
   /// `null` = repetição sem número definido (usa o horizonte padrão).
   int? recurrenceCount;
+
+  /// Identifies a goal contribution mirrored in the transaction ledger.
+  final String? goalId;
+  final String? goalContributionId;
   final DateTime createdAt;
 
   bool get isRecurring => recurrenceId != null && recurrence != null;
+  bool get isGoalContribution => goalId != null && goalContributionId != null;
 
   bool get isFuture {
     final DateTime now = DateTime.now();
@@ -132,8 +141,7 @@ class Transaction {
   /// Vencido: a data já passou e o lançamento ainda não foi efetivado.
   bool get isOverdue => isPastDue && !isSettled;
 
-  double get signedAmount =>
-      type == TransactionType.income ? amount : -amount;
+  double get signedAmount => type == TransactionType.income ? amount : -amount;
 
   Transaction copyWith({
     TransactionType? type,
@@ -158,41 +166,48 @@ class Transaction {
       recurrenceId: recurrenceId,
       recurrence: recurrence,
       recurrenceCount: recurrenceCount,
+      goalId: goalId,
+      goalContributionId: goalContributionId,
       createdAt: createdAt,
     );
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'id': id,
-        'type': type.name,
-        'amount': amount,
-        'categoryId': categoryId,
-        'date': date.toIso8601String(),
-        'accountId': accountId,
-        'description': description,
-        'notes': notes,
-        'isPaid': isPaid,
-        'recurrenceId': recurrenceId,
-        'recurrence': recurrence?.name,
-        'recurrenceCount': recurrenceCount,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'type': type.name,
+    'amount': amount,
+    'categoryId': categoryId,
+    'date': date.toIso8601String(),
+    'accountId': accountId,
+    'description': description,
+    'notes': notes,
+    'isPaid': isPaid,
+    'recurrenceId': recurrenceId,
+    'recurrence': recurrence?.name,
+    'recurrenceCount': recurrenceCount,
+    'goalId': goalId,
+    'goalContributionId': goalContributionId,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory Transaction.fromJson(Map<String, dynamic> json) => Transaction(
-        id: json['id'] as String,
-        type: transactionTypeFromName(json['type'] as String? ?? 'expense'),
-        amount: (json['amount'] as num).toDouble(),
-        categoryId: json['categoryId'] as String,
-        date: DateTime.parse(json['date'] as String),
-        accountId: json['accountId'] as String?,
-        description: json['description'] as String? ?? '',
-        notes: json['notes'] as String? ?? '',
-        isPaid: json['isPaid'] as bool?,
-        recurrenceId: json['recurrenceId'] as String?,
-        recurrence: recurrencePeriodFromName(json['recurrence'] as String?),
-        recurrenceCount: (json['recurrenceCount'] as num?)?.toInt(),
-        createdAt: json['createdAt'] == null
+    id: json['id'] as String,
+    type: transactionTypeFromName(json['type'] as String? ?? 'expense'),
+    amount: (json['amount'] as num).toDouble(),
+    categoryId: json['categoryId'] as String,
+    date: DateTime.parse(json['date'] as String),
+    accountId: json['accountId'] as String?,
+    description: json['description'] as String? ?? '',
+    notes: json['notes'] as String? ?? '',
+    isPaid: json['isPaid'] as bool?,
+    recurrenceId: json['recurrenceId'] as String?,
+    recurrence: recurrencePeriodFromName(json['recurrence'] as String?),
+    recurrenceCount: (json['recurrenceCount'] as num?)?.toInt(),
+    goalId: json['goalId'] as String?,
+    goalContributionId: json['goalContributionId'] as String?,
+    createdAt:
+        json['createdAt'] == null
             ? null
             : DateTime.parse(json['createdAt'] as String),
-      );
+  );
 }

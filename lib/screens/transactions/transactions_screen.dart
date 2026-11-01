@@ -14,7 +14,11 @@ import '../../widgets/transaction_tile.dart';
 import 'transaction_editor_screen.dart';
 
 class TransactionsScreen extends StatefulWidget {
-  const TransactionsScreen({this.embedded = false, this.initialType, super.key});
+  const TransactionsScreen({
+    this.embedded = false,
+    this.initialType,
+    super.key,
+  });
 
   final bool embedded;
   final TransactionType? initialType;
@@ -71,7 +75,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     double settledBalance = 0;
     for (final Transaction t in list) {
-      if (t.isSettled) settledBalance += t.signedAmount;
+      if (t.isSettled && !t.isGoalContribution) {
+        settledBalance += t.signedAmount;
+      }
     }
     // O que foi guardado em metas no mês também sai do saldo livre.
     settledBalance -= finance.goalContributionsBetween(from, to);
@@ -79,8 +85,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     // Saldo geral: saldo inicial das contas + tudo que não é futuro - metas.
     final double generalBalance = finance.totalBalance;
 
-    final int overdueCount =
-        list.where((Transaction t) => t.isOverdue).length;
+    final int overdueCount = list.where((Transaction t) => t.isOverdue).length;
 
     return AppScaffold(
       title: 'Extrato',
@@ -92,7 +97,13 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               child: Column(
                 children: <Widget>[
                   _monthSelector(
-                      theme, sym, income, expense, settledBalance, generalBalance),
+                    theme,
+                    sym,
+                    income,
+                    expense,
+                    settledBalance,
+                    generalBalance,
+                  ),
                   if (overdueCount > 0) ...<Widget>[
                     const SizedBox(height: 10),
                     _overdueBanner(theme, overdueCount),
@@ -104,15 +115,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     decoration: InputDecoration(
                       hintText: 'Buscar por descrição...',
                       prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _search.text.isEmpty
-                          ? null
-                          : IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _search.clear();
-                                setState(() {});
-                              },
-                            ),
+                      suffixIcon:
+                          _search.text.isEmpty
+                              ? null
+                              : IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _search.clear();
+                                  setState(() {});
+                                },
+                              ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -123,22 +135,25 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         FilterChip(
                           label: const Text('Tudo'),
                           selected: _typeFilter == null,
-                          onSelected: (_) =>
-                              setState(() => _typeFilter = null),
+                          onSelected: (_) => setState(() => _typeFilter = null),
                         ),
                         const SizedBox(width: 8),
                         FilterChip(
                           label: const Text('Receitas'),
                           selected: _typeFilter == TransactionType.income,
-                          onSelected: (_) => setState(
-                              () => _typeFilter = TransactionType.income),
+                          onSelected:
+                              (_) => setState(
+                                () => _typeFilter = TransactionType.income,
+                              ),
                         ),
                         const SizedBox(width: 8),
                         FilterChip(
                           label: const Text('Despesas'),
                           selected: _typeFilter == TransactionType.expense,
-                          onSelected: (_) => setState(
-                              () => _typeFilter = TransactionType.expense),
+                          onSelected:
+                              (_) => setState(
+                                () => _typeFilter = TransactionType.expense,
+                              ),
                         ),
                         const SizedBox(width: 16),
                         _categoryDropdown(finance, theme),
@@ -180,9 +195,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     currencySymbol: sym,
                     accountName: finance.accountById(t.accountId)?.name,
                     onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute<void>(
-                        builder: (_) => TransactionEditorScreen(existing: t),
-                      ));
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => TransactionEditorScreen(existing: t),
+                        ),
+                      );
                     },
                     onLongPress: () => _confirmDelete(t),
                     onSettle: () => finance.settleTransaction(t.id),
@@ -194,8 +211,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => const TransactionEditorScreen()));
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const TransactionEditorScreen(),
+            ),
+          );
         },
         icon: const Icon(Icons.add),
         label: const Text('Novo'),
@@ -203,8 +223,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     );
   }
 
-  Widget _monthSelector(ThemeData theme, String sym, double income,
-      double expense, double settledBalance, double generalBalance) {
+  Widget _monthSelector(
+    ThemeData theme,
+    String sym,
+    double income,
+    double expense,
+    double settledBalance,
+    double generalBalance,
+  ) {
     return SectionCard(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
@@ -218,8 +244,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               children: <Widget>[
                 Text(
                   DateHelpers.monthYear.format(_month),
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 FittedBox(
@@ -229,14 +256,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     children: <Widget>[
                       Text(
                         '+ ${Money.format(income, '', symbol: sym)}',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: const Color(0xFF06D6A0)),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF06D6A0),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Text(
                         '- ${Money.format(expense, '', symbol: sym)}',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: const Color(0xFFEF476F)),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFFEF476F),
+                        ),
                       ),
                     ],
                   ),
@@ -314,7 +343,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             value: null,
             child: Text('Todas as categorias'),
           ),
-          ...finance.categories.map(
+          ...finance.transactionCategories.map(
             (Category c) => DropdownMenuItem<String?>(
               value: c.id,
               child: Row(
@@ -346,20 +375,21 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     }
     final bool? ok = await showDialog<bool>(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('Excluir lançamento?'),
-        content: const Text('Essa ação não pode ser desfeita.'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+      builder:
+          (BuildContext context) => AlertDialog(
+            title: const Text('Excluir lançamento?'),
+            content: const Text('Essa ação não pode ser desfeita.'),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Excluir'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
     );
     if (ok == true) {
       finance.deleteTransaction(t.id);

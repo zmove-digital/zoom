@@ -6,11 +6,15 @@ import 'package:path_provider/path_provider.dart';
 class LocalDatabase {
   LocalDatabase._(this._file, this._data);
 
-  final File _file;
+  final File? _file;
   Map<String, dynamic> _data;
   Future<void> _writeQueue = Future<void>.value();
 
   static const int schemaVersion = 1;
+
+  factory LocalDatabase.inMemory({
+    Map<String, dynamic> initialData = const <String, dynamic>{},
+  }) => LocalDatabase._(null, Map<String, dynamic>.from(initialData));
 
   static Future<LocalDatabase> open() async {
     final Directory dir = await getApplicationSupportDirectory();
@@ -80,11 +84,13 @@ class LocalDatabase {
   Future<void> flush() => _writeQueue;
 
   Future<void> _save() async {
+    final File? file = _file;
+    if (file == null) return;
     try {
       final String encoded = const JsonEncoder.withIndent('  ').convert(_data);
-      final File temp = File('${_file.path}.tmp');
+      final File temp = File('${file.path}.tmp');
       await temp.writeAsString(encoded, flush: true);
-      await temp.rename(_file.path);
+      await temp.rename(file.path);
     } catch (_) {
       // Falha silenciosa: os dados permanecem em memoria.
     }

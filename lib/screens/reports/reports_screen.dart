@@ -40,22 +40,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
   _PieMode get _nextPieMode =>
       _PieMode.values[(_pieMode.index + 1) % _PieMode.values.length];
 
-  (DateTime, DateTime) _range() =>
-      _rangeFor(_period, _customFrom, _customTo);
+  (DateTime, DateTime) _range() => _rangeFor(_period, _customFrom, _customTo);
 
-  (DateTime, DateTime) _catRange() =>
-      _rangeFor(_catPeriod, _catFrom, _catTo);
+  (DateTime, DateTime) _catRange() => _rangeFor(_catPeriod, _catFrom, _catTo);
 
   (DateTime, DateTime) _rangeFor(
-      _Period period, DateTime? customFrom, DateTime? customTo) {
+    _Period period,
+    DateTime? customFrom,
+    DateTime? customTo,
+  ) {
     final DateTime now = DateTime.now();
     switch (period) {
       case _Period.month:
         return (DateHelpers.startOfMonth(now), DateHelpers.endOfMonth(now));
       case _Period.last30:
         return (
-          DateTime(now.year, now.month, now.day)
-              .subtract(const Duration(days: 29)),
+          DateTime(
+            now.year,
+            now.month,
+            now.day,
+          ).subtract(const Duration(days: 29)),
           DateTime(now.year, now.month, now.day, 23, 59, 59),
         );
       case _Period.year:
@@ -73,8 +77,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   String _catPeriodLabel() => _labelFor(_catPeriod, _catFrom, _catTo);
 
-  String _labelFor(
-      _Period period, DateTime? customFrom, DateTime? customTo) {
+  String _labelFor(_Period period, DateTime? customFrom, DateTime? customTo) {
     switch (period) {
       case _Period.month:
         return 'Este mês';
@@ -120,12 +123,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      initialDateRange: (from != null && to != null)
-          ? DateTimeRange(start: from, end: to)
-          : DateTimeRange(
-              start: DateTime(now.year, now.month, 1),
-              end: DateTime(now.year, now.month, now.day),
-            ),
+      initialDateRange:
+          (from != null && to != null)
+              ? DateTimeRange(start: from, end: to)
+              : DateTimeRange(
+                start: DateTime(now.year, now.month, 1),
+                end: DateTime(now.year, now.month, now.day),
+              ),
     );
   }
 
@@ -137,8 +141,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final String sym = settings.currencySymbol;
 
     final (DateTime from, DateTime to) = _range();
-    final List<Transaction> list =
-        finance.filtered(from: from, to: to);
+    final List<Transaction> list = finance.filtered(from: from, to: to);
     final double income = finance.sumFor(list, TransactionType.income);
     final double expense = finance.sumFor(list, TransactionType.expense);
     final double balance = income - expense;
@@ -148,10 +151,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
       _PieMode.income => TransactionType.income,
       _PieMode.both => null,
     };
-    final Map<String, double> byCategory =
-        finance.totalsByCategory(from, to, type: pieType);
-    final double pieTotal =
-        byCategory.values.fold(0.0, (double a, double b) => a + b);
+    final Map<String, double> byCategory = finance.totalsByCategory(
+      from,
+      to,
+      type: pieType,
+    );
+    final double pieTotal = byCategory.values.fold(
+      0.0,
+      (double a, double b) => a + b,
+    );
     final String pieTitle = switch (_pieMode) {
       _PieMode.expense => 'Despesas por categoria',
       _PieMode.income => 'Receitas por categoria',
@@ -159,18 +167,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
     };
 
     final List<MapEntry<String, double>> sortedCats =
-        byCategory.entries.toList()
-          ..sort((MapEntry<String, double> a, MapEntry<String, double> b) =>
-              b.value.compareTo(a.value));
+        byCategory.entries.toList()..sort(
+          (MapEntry<String, double> a, MapEntry<String, double> b) =>
+              b.value.compareTo(a.value),
+        );
 
     return AppScaffold(
       title: 'Relatórios',
       actions: <Widget>[
         IconButton(
-          onPressed: list.isEmpty
-              ? null
-              : () => _export(list, income, expense,
-                  finance.expenseByCategory(from, to), sym, finance),
+          onPressed:
+              list.isEmpty
+                  ? null
+                  : () => _export(
+                    list,
+                    income,
+                    expense,
+                    finance.expenseByCategory(from, to),
+                    sym,
+                    finance,
+                  ),
           icon: const Icon(Icons.ios_share),
           tooltip: 'Exportar',
         ),
@@ -181,23 +197,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: _Period.values.map((_Period p) {
-                final bool selected = _period == p;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(_periodLabelFor(p)),
-                    selected: selected,
-                    onSelected: (_) {
-                      if (p == _Period.custom) {
-                        _pickCustomRange();
-                      } else {
-                        setState(() => _period = p);
-                      }
-                    },
-                  ),
-                );
-              }).toList(),
+              children:
+                  _Period.values.map((_Period p) {
+                    final bool selected = _period == p;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(_periodLabelFor(p)),
+                        selected: selected,
+                        onSelected: (_) {
+                          if (p == _Period.custom) {
+                            _pickCustomRange();
+                          } else {
+                            setState(() => _period = p);
+                          }
+                        },
+                      ),
+                    );
+                  }).toList(),
             ),
           ),
           const SizedBox(height: 16),
@@ -229,16 +246,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Text('Saldo do período',
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Saldo do período',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 Text(
                   Money.format(balance, '', symbol: sym),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: balance >= 0
-                        ? const Color(0xFF06D6A0)
-                        : theme.colorScheme.error,
+                    color:
+                        balance >= 0
+                            ? const Color(0xFF06D6A0)
+                            : theme.colorScheme.error,
                   ),
                 ),
               ],
@@ -248,14 +269,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Row(
             children: <Widget>[
               Expanded(
-                child: Text(pieTitle,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                child: Text(
+                  pieTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
               const SizedBox(width: 8),
-              Text('toque para alternar',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.outline)),
+              Text(
+                'toque para alternar',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -264,8 +291,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: SizedBox(
                 height: 120,
                 child: Center(
-                  child: Text('Sem dados no período',
-                      style: theme.textTheme.bodyMedium),
+                  child: Text(
+                    'Sem dados no período',
+                    style: theme.textTheme.bodyMedium,
+                  ),
                 ),
               ),
             )
@@ -284,24 +313,29 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             centerSpaceRadius: 42,
                             sections:
                                 sortedCats.map((MapEntry<String, double> e) {
-                              final Category? c = finance.categoryById(e.key);
-                              final double pct = pieTotal <= 0
-                                  ? 0
-                                  : (e.value / pieTotal) * 100;
-                              return PieChartSectionData(
-                                value: e.value,
-                                color: c?.color ?? theme.colorScheme.primary,
-                                title: pct >= 8
-                                    ? '${pct.toStringAsFixed(0)}%'
-                                    : '',
-                                radius: 52,
-                                titleStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 11,
-                                ),
-                              );
-                            }).toList(),
+                                  final Category? c = finance.categoryById(
+                                    e.key,
+                                  );
+                                  final double pct =
+                                      pieTotal <= 0
+                                          ? 0
+                                          : (e.value / pieTotal) * 100;
+                                  return PieChartSectionData(
+                                    value: e.value,
+                                    color:
+                                        c?.color ?? theme.colorScheme.primary,
+                                    title:
+                                        pct >= 8
+                                            ? '${pct.toStringAsFixed(0)}%'
+                                            : '',
+                                    radius: 52,
+                                    titleStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  );
+                                }).toList(),
                           ),
                         ),
                       ),
@@ -309,43 +343,47 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ListView(
-                        children: sortedCats.take(8).map(
-                          (MapEntry<String, double> e) {
-                            final Category? c = finance.categoryById(e.key);
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                children: <Widget>[
-                                  Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: c?.color ??
-                                          theme.colorScheme.primary,
-                                      borderRadius: BorderRadius.circular(3),
+                        children:
+                            sortedCats.take(8).map((
+                              MapEntry<String, double> e,
+                            ) {
+                              final Category? c = finance.categoryById(e.key);
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                ),
+                                child: Row(
+                                  children: <Widget>[
+                                    Container(
+                                      width: 12,
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        color:
+                                            c?.color ??
+                                            theme.colorScheme.primary,
+                                        borderRadius: BorderRadius.circular(3),
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      c?.name ?? '—',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodySmall,
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        c?.name ?? '—',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    Money.format(e.value, '', symbol: sym),
-                                    style: theme.textTheme.bodySmall
-                                        ?.copyWith(
-                                            fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ).toList(),
+                                    Text(
+                                      Money.format(e.value, '', symbol: sym),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
                       ),
                     ),
                   ],
@@ -355,15 +393,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
           const SizedBox(height: 20),
           _categoryReportSection(finance, theme, sym),
           const SizedBox(height: 20),
-          Text('Últimos 6 meses',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            'Últimos 6 meses',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 12),
           SectionCard(
-            child: SizedBox(
-              height: 220,
-              child: _barChart(finance, theme, sym),
-            ),
+            child: SizedBox(height: 220, child: _barChart(finance, theme, sym)),
           ),
         ],
       ),
@@ -386,20 +424,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _categoryReportSection(
-      FinanceController finance, ThemeData theme, String sym) {
+    FinanceController finance,
+    ThemeData theme,
+    String sym,
+  ) {
     final (DateTime from, DateTime to) = _catRange();
     final List<_ReportGroup> groups = _reportGroups(finance, from, to);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text('Relatório por categoria',
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          'Relatório por categoria',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 6),
         Text(
           'Escolha uma ou mais categorias para ver os lançamentos e exportar em PDF no período selecionado.',
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: theme.colorScheme.outline),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
         ),
         const SizedBox(height: 10),
         SectionCard(
@@ -409,39 +454,47 @@ class _ReportsScreenState extends State<ReportsScreen> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: _Period.values.map((_Period p) {
-                    final bool selected = _catPeriod == p;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(_periodLabelFor(p)),
-                        selected: selected,
-                        onSelected: (_) {
-                          if (p == _Period.custom) {
-                            _pickCatCustomRange();
-                          } else {
-                            setState(() => _catPeriod = p);
-                          }
-                        },
-                      ),
-                    );
-                  }).toList(),
+                  children:
+                      _Period.values.map((_Period p) {
+                        final bool selected = _catPeriod == p;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(_periodLabelFor(p)),
+                            selected: selected,
+                            onSelected: (_) {
+                              if (p == _Period.custom) {
+                                _pickCatCustomRange();
+                              } else {
+                                setState(() => _catPeriod = p);
+                              }
+                            },
+                          ),
+                        );
+                      }).toList(),
                 ),
               ),
               const SizedBox(height: 4),
-              Text(_catPeriodLabel(),
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.outline)),
+              Text(
+                _catPeriodLabel(),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
               const Divider(height: 20),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.checklist_rtl),
-                title: Text(_selectedCategories.isEmpty
-                    ? 'Escolher categorias'
-                    : 'Categorias selecionadas'),
-                subtitle: Text(_selectedCategories.isEmpty
-                    ? 'Nenhuma categoria escolhida'
-                    : '${_selectedCategories.length} selecionada(s)'),
+                title: Text(
+                  _selectedCategories.isEmpty
+                      ? 'Escolher categorias'
+                      : 'Categorias selecionadas',
+                ),
+                subtitle: Text(
+                  _selectedCategories.isEmpty
+                      ? 'Nenhuma categoria escolhida'
+                      : '${_selectedCategories.length} selecionada(s)',
+                ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _pickCategories(finance),
               ),
@@ -449,35 +502,41 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
-                  children: _selectedCategories
-                      .map((String id) => finance.categoryById(id))
-                      .whereType<Category>()
-                      .map((Category c) => Chip(
-                            avatar: Icon(c.icon, size: 16, color: c.color),
-                            label: Text(c.name),
-                            onDeleted: () => setState(
-                                () => _selectedCategories.remove(c.id)),
-                          ))
-                      .toList(),
+                  children:
+                      _selectedCategories
+                          .map((String id) => finance.categoryById(id))
+                          .whereType<Category>()
+                          .map(
+                            (Category c) => Chip(
+                              avatar: Icon(c.icon, size: 16, color: c.color),
+                              label: Text(c.name),
+                              onDeleted:
+                                  () => setState(
+                                    () => _selectedCategories.remove(c.id),
+                                  ),
+                            ),
+                          )
+                          .toList(),
                 ),
                 const SizedBox(height: 8),
                 if (groups.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Text(
-                        'Sem lançamentos dessas categorias no período.',
-                        style: theme.textTheme.bodySmall),
+                      'Sem lançamentos dessas categorias no período.',
+                      style: theme.textTheme.bodySmall,
+                    ),
                   )
                 else
-                  ...groups.map(
-                      (_ReportGroup g) => _groupTile(g, theme, sym)),
+                  ...groups.map((_ReportGroup g) => _groupTile(g, theme, sym)),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: groups.isEmpty
-                        ? null
-                        : () => _exportPdf(finance, from, to, sym),
+                    onPressed:
+                        groups.isEmpty
+                            ? null
+                            : () => _exportPdf(finance, from, to, sym),
                     icon: const Icon(Icons.picture_as_pdf_outlined),
                     label: const Text('Exportar PDF'),
                   ),
@@ -491,13 +550,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   List<_ReportGroup> _reportGroups(
-      FinanceController finance, DateTime from, DateTime to) {
+    FinanceController finance,
+    DateTime from,
+    DateTime to,
+  ) {
     final List<_ReportGroup> groups = <_ReportGroup>[];
     for (final String id in _selectedCategories) {
       final Category? c = finance.categoryById(id);
       if (c == null) continue;
-      final List<Transaction> items =
-          finance.filtered(categoryId: id, from: from, to: to);
+      final List<Transaction> items = finance.filtered(
+        categoryId: id,
+        from: from,
+        to: to,
+      );
       if (items.isEmpty) continue;
       double total = 0;
       for (final Transaction t in items) {
@@ -505,9 +570,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
       }
       groups.add(_ReportGroup(c, items, total));
     }
-    groups.sort((_ReportGroup a, _ReportGroup b) => a.category.name
-        .toLowerCase()
-        .compareTo(b.category.name.toLowerCase()));
+    groups.sort(
+      (_ReportGroup a, _ReportGroup b) => a.category.name
+          .toLowerCase()
+          .compareTo(b.category.name.toLowerCase()),
+    );
     return groups;
   }
 
@@ -522,17 +589,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Icon(g.category.icon, size: 18, color: g.category.color),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(g.category.name,
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                child: Text(
+                  g.category.name,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
               Text(
                 Money.format(g.total, '', symbol: sym),
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: g.total < 0
-                      ? theme.colorScheme.error
-                      : const Color(0xFF06D6A0),
+                  color:
+                      g.total < 0
+                          ? theme.colorScheme.error
+                          : const Color(0xFF06D6A0),
                 ),
               ),
             ],
@@ -545,15 +616,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 children: <Widget>[
                   SizedBox(
                     width: 76,
-                    child: Text(DateHelpers.full.format(t.date),
-                        style: theme.textTheme.bodySmall),
+                    child: Text(
+                      DateHelpers.full.format(t.date),
+                      style: theme.textTheme.bodySmall,
+                    ),
                   ),
                   Expanded(
                     child: Row(
                       children: <Widget>[
                         if (!t.isSettled) ...<Widget>[
-                          Icon(Icons.schedule,
-                              size: 12, color: theme.colorScheme.outline),
+                          Icon(
+                            Icons.schedule,
+                            size: 12,
+                            color: theme.colorScheme.outline,
+                          ),
                           const SizedBox(width: 4),
                         ],
                         Expanded(
@@ -564,9 +640,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: t.isSettled
-                                  ? null
-                                  : theme.colorScheme.outline,
+                              color:
+                                  t.isSettled
+                                      ? null
+                                      : theme.colorScheme.outline,
                             ),
                           ),
                         ),
@@ -576,9 +653,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   Text(
                     '${t.type == TransactionType.income ? '+' : '-'} ${Money.format(t.amount.abs(), '', symbol: sym)}',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: t.type == TransactionType.income
-                          ? const Color(0xFF06D6A0)
-                          : theme.colorScheme.error,
+                      color:
+                          t.type == TransactionType.income
+                              ? const Color(0xFF06D6A0)
+                              : theme.colorScheme.error,
                     ),
                   ),
                 ],
@@ -595,45 +673,54 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final Set<String> temp = <String>{..._selectedCategories};
     final Set<String>? result = await showDialog<Set<String>>(
       context: context,
-      builder: (BuildContext ctx) => StatefulBuilder(
-        builder: (BuildContext ctx, StateSetter setLocal) => AlertDialog(
-          title: const Text('Escolher categorias'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: finance.categories.isEmpty
-                ? const Text('Nenhuma categoria cadastrada.')
-                : ListView(
-                    shrinkWrap: true,
-                    children: finance.categories
-                        .map((Category c) => CheckboxListTile(
-                              value: temp.contains(c.id),
-                              onChanged: (bool? v) {
-                                setLocal(() {
-                                  if (v == true) {
-                                    temp.add(c.id);
-                                  } else {
-                                    temp.remove(c.id);
-                                  }
-                                });
-                              },
-                              secondary: Icon(c.icon, color: c.color),
-                              title: Text(c.name),
-                            ))
-                        .toList(),
+      builder:
+          (BuildContext ctx) => StatefulBuilder(
+            builder:
+                (BuildContext ctx, StateSetter setLocal) => AlertDialog(
+                  title: const Text('Escolher categorias'),
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    child:
+                        finance.transactionCategories.isEmpty
+                            ? const Text('Nenhuma categoria cadastrada.')
+                            : ListView(
+                              shrinkWrap: true,
+                              children:
+                                  finance.transactionCategories
+                                      .map(
+                                        (Category c) => CheckboxListTile(
+                                          value: temp.contains(c.id),
+                                          onChanged: (bool? v) {
+                                            setLocal(() {
+                                              if (v == true) {
+                                                temp.add(c.id);
+                                              } else {
+                                                temp.remove(c.id);
+                                              }
+                                            });
+                                          },
+                                          secondary: Icon(
+                                            c.icon,
+                                            color: c.color,
+                                          ),
+                                          title: Text(c.name),
+                                        ),
+                                      )
+                                      .toList(),
+                            ),
                   ),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancelar'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, temp),
+                      child: const Text('Aplicar'),
+                    ),
+                  ],
+                ),
           ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, temp),
-              child: const Text('Aplicar'),
-            ),
-          ],
-        ),
-      ),
     );
     if (result != null) {
       setState(() {
@@ -645,7 +732,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Future<void> _exportPdf(
-      FinanceController finance, DateTime from, DateTime to, String sym) async {
+    FinanceController finance,
+    DateTime from,
+    DateTime to,
+    String sym,
+  ) async {
     try {
       final File file = await PdfReportService().buildCategoryReport(
         finance: finance,
@@ -655,10 +746,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
         periodLabel: _catPeriodLabel(),
         symbol: sym,
       );
-      await Share.shareXFiles(
-        <XFile>[XFile(file.path, mimeType: 'application/pdf')],
-        subject: 'Relatório ZOOM - ${_catPeriodLabel()}',
-      );
+      await Share.shareXFiles(<XFile>[
+        XFile(file.path, mimeType: 'application/pdf'),
+      ], subject: 'Relatório ZOOM - ${_catPeriodLabel()}');
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -668,12 +758,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  Widget _barChart(
-      FinanceController finance, ThemeData theme, String sym) {
-    final List<MapEntry<DateTime, double>> income =
-        finance.monthlySeries(6, type: TransactionType.income);
-    final List<MapEntry<DateTime, double>> expense =
-        finance.monthlySeries(6, type: TransactionType.expense);
+  Widget _barChart(FinanceController finance, ThemeData theme, String sym) {
+    final List<MapEntry<DateTime, double>> income = finance.monthlySeries(
+      6,
+      type: TransactionType.income,
+    );
+    final List<MapEntry<DateTime, double>> expense = finance.monthlySeries(
+      6,
+      type: TransactionType.expense,
+    );
 
     double maxY = 0;
     for (int i = 0; i < income.length; i++) {
@@ -689,21 +782,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
         gridData: const FlGridData(show: false),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 56,
-              getTitlesWidget: (double value, TitleMeta meta) => Text(
-                Money.compact(value, sym, space: false),
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.visible,
-                style: theme.textTheme.labelSmall,
-              ),
+              getTitlesWidget:
+                  (double value, TitleMeta meta) => Text(
+                    Money.compact(value, sym, space: false),
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
+                    style: theme.textTheme.labelSmall,
+                  ),
             ),
           ),
           bottomTitles: AxisTitles(
@@ -784,18 +880,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
     csv.writeln('Despesas por categoria;');
     byCategory.entries.toList().forEach((MapEntry<String, double> e) {
       final Category? c = finance.categoryById(e.key);
-      csv.writeln('${c?.name ?? ''};${e.value.toStringAsFixed(2).replaceAll('.', ',')}');
+      csv.writeln(
+        '${c?.name ?? ''};${e.value.toStringAsFixed(2).replaceAll('.', ',')}',
+      );
     });
 
     try {
       final Directory dir = await getTemporaryDirectory();
       final File file = File(
-          '${dir.path}${Platform.pathSeparator}relatorio_zoom.csv');
-      await file.writeAsString(csv.toString(), encoding: utf8);
-      await Share.shareXFiles(
-        <XFile>[XFile(file.path, mimeType: 'text/csv')],
-        subject: 'Relatório ZOOM - ${_periodLabel()}',
+        '${dir.path}${Platform.pathSeparator}relatorio_zoom.csv',
       );
+      await file.writeAsString(csv.toString(), encoding: utf8);
+      await Share.shareXFiles(<XFile>[
+        XFile(file.path, mimeType: 'text/csv'),
+      ], subject: 'Relatório ZOOM - ${_periodLabel()}');
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
