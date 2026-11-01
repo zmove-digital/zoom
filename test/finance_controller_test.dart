@@ -117,6 +117,7 @@ void main() {
       ),
     );
     expect(finance.accountBalance('account-1'), 1000);
+    expect(finance.expenseThisMonth, 0);
 
     finance.addTransaction(
       Transaction(
@@ -130,6 +131,7 @@ void main() {
       ),
     );
     expect(finance.accountBalance('account-1'), 960);
+    expect(finance.expenseThisMonth, 40);
 
     finance.addTransaction(
       Transaction(
@@ -143,5 +145,6 @@ void main() {
       ),
     );
     expect(finance.accountBalance('account-1'), 960);
+    expect(finance.expenseThisMonth, 40);
   });
 }

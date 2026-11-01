@@ -182,7 +182,7 @@ class FinanceController extends ChangeNotifier {
     final DateTime now = DateTime.now();
     return sumFor(
       transactions.where(
-        (Transaction t) => DateHelpers.isSameMonth(t.date, now),
+        (Transaction t) => DateHelpers.isSameMonth(t.date, now) && t.isSettled,
       ),
       TransactionType.expense,
     );
