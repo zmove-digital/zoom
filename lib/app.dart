@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme/app_theme.dart';
@@ -17,6 +18,9 @@ class ZoomApp extends StatelessWidget {
     return MaterialApp(
       title: 'ZOOM',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('pt', 'BR'),
+      supportedLocales: const <Locale>[Locale('pt', 'BR')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: AppTheme.build(settings.settings, Brightness.light),
       darkTheme: AppTheme.build(settings.settings, Brightness.dark),
       themeMode: settings.themeMode,
