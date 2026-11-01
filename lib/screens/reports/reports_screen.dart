@@ -13,6 +13,7 @@ import '../../data/models/transaction.dart';
 import '../../services/pdf_report_service.dart';
 import '../../state/finance_controller.dart';
 import '../../state/settings_controller.dart';
+import 'report_category_selection.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/section_card.dart';
 
@@ -35,7 +36,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   _Period _catPeriod = _Period.month;
   DateTime? _catFrom;
   DateTime? _catTo;
-  final Set<String> _selectedCategories = <String>{};
+  final ReportCategorySelection _categorySelection = ReportCategorySelection();
 
   _PieMode get _nextPieMode =>
       _PieMode.values[(_pieMode.index + 1) % _PieMode.values.length];
@@ -486,37 +487,60 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.checklist_rtl),
                 title: Text(
-                  _selectedCategories.isEmpty
-                      ? 'Escolher categorias'
-                      : 'Categorias selecionadas',
+                  _categorySelection.allSelected
+                      ? 'Todas as categorias'
+                      : (_categorySelection.selectedIds.isEmpty
+                          ? 'Escolher categorias'
+                          : 'Categorias selecionadas'),
                 ),
                 subtitle: Text(
-                  _selectedCategories.isEmpty
-                      ? 'Nenhuma categoria escolhida'
-                      : '${_selectedCategories.length} selecionada(s)',
+                  _categorySelection.allSelected
+                      ? 'Todas selecionadas'
+                      : (_categorySelection.selectedIds.isEmpty
+                          ? 'Nenhuma categoria escolhida'
+                          : '${_categorySelection.selectedIds.length} selecionada(s)'),
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _pickCategories(finance),
               ),
-              if (_selectedCategories.isNotEmpty) ...<Widget>[
+              if (_categorySelection.allSelected ||
+                  _categorySelection.selectedIds.isNotEmpty) ...<Widget>[
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
                   children:
-                      _selectedCategories
-                          .map((String id) => finance.categoryById(id))
-                          .whereType<Category>()
-                          .map(
-                            (Category c) => Chip(
-                              avatar: Icon(c.icon, size: 16, color: c.color),
-                              label: Text(c.name),
+                      _categorySelection.allSelected
+                          ? <Widget>[
+                            Chip(
+                              label: const Text('Todas'),
                               onDeleted:
                                   () => setState(
-                                    () => _selectedCategories.remove(c.id),
+                                    () => _categorySelection.toggleAll(false),
                                   ),
                             ),
-                          )
-                          .toList(),
+                          ]
+                          : _categorySelection.selectedIds
+                              .map((String id) => finance.categoryById(id))
+                              .whereType<Category>()
+                              .map(
+                                (Category c) => Chip(
+                                  avatar: Icon(
+                                    c.icon,
+                                    size: 16,
+                                    color: c.color,
+                                  ),
+                                  label: Text(c.name),
+                                  onDeleted:
+                                      () => setState(
+                                        () => _categorySelection.toggleCategory(
+                                          c.id,
+                                          false,
+                                          finance.transactionCategories,
+                                        ),
+                                      ),
+                                ),
+                              )
+                              .toList(),
                 ),
                 const SizedBox(height: 8),
                 if (groups.isEmpty)
@@ -555,7 +579,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
     DateTime to,
   ) {
     final List<_ReportGroup> groups = <_ReportGroup>[];
-    for (final String id in _selectedCategories) {
+    for (final String id in _categorySelection.categoryIds(
+      finance.transactionCategories,
+    )) {
       final Category? c = finance.categoryById(id);
       if (c == null) continue;
       final List<Transaction> items = finance.filtered(
@@ -670,7 +696,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Future<void> _pickCategories(FinanceController finance) async {
-    final Set<String> temp = <String>{..._selectedCategories};
+    final ReportCategorySelection temp =
+        ReportCategorySelection()
+          ..selectedIds.addAll(_categorySelection.selectedIds);
     final Set<String>? result = await showDialog<Set<String>>(
       context: context,
       builder:
@@ -685,28 +713,34 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             ? const Text('Nenhuma categoria cadastrada.')
                             : ListView(
                               shrinkWrap: true,
-                              children:
-                                  finance.transactionCategories
-                                      .map(
-                                        (Category c) => CheckboxListTile(
-                                          value: temp.contains(c.id),
-                                          onChanged: (bool? v) {
-                                            setLocal(() {
-                                              if (v == true) {
-                                                temp.add(c.id);
-                                              } else {
-                                                temp.remove(c.id);
-                                              }
-                                            });
-                                          },
-                                          secondary: Icon(
-                                            c.icon,
-                                            color: c.color,
-                                          ),
-                                          title: Text(c.name),
-                                        ),
-                                      )
-                                      .toList(),
+                              children: <Widget>[
+                                CheckboxListTile(
+                                  value: temp.allSelected,
+                                  onChanged: (bool? value) {
+                                    setLocal(
+                                      () => temp.toggleAll(value == true),
+                                    );
+                                  },
+                                  secondary: const Icon(Icons.select_all),
+                                  title: const Text('Todas'),
+                                ),
+                                ...finance.transactionCategories.map(
+                                  (Category c) => CheckboxListTile(
+                                    value: temp.isSelected(c.id),
+                                    onChanged: (bool? v) {
+                                      setLocal(() {
+                                        temp.toggleCategory(
+                                          c.id,
+                                          v == true,
+                                          finance.transactionCategories,
+                                        );
+                                      });
+                                    },
+                                    secondary: Icon(c.icon, color: c.color),
+                                    title: Text(c.name),
+                                  ),
+                                ),
+                              ],
                             ),
                   ),
                   actions: <Widget>[
@@ -715,7 +749,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       child: const Text('Cancelar'),
                     ),
                     FilledButton(
-                      onPressed: () => Navigator.pop(ctx, temp),
+                      onPressed: () => Navigator.pop(ctx, temp.selectedIds),
                       child: const Text('Aplicar'),
                     ),
                   ],
@@ -724,7 +758,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
     if (result != null) {
       setState(() {
-        _selectedCategories
+        _categorySelection.selectedIds
           ..clear()
           ..addAll(result);
       });
@@ -740,7 +774,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
     try {
       final File file = await PdfReportService().buildCategoryReport(
         finance: finance,
-        categoryIds: _selectedCategories.toList(),
+        categoryIds: _categorySelection.categoryIds(
+          finance.transactionCategories,
+        ),
         from: from,
         to: to,
         periodLabel: _catPeriodLabel(),
