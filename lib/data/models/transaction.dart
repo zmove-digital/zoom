@@ -1,6 +1,7 @@
 enum TransactionType { income, expense }
 
 const String goalContributionCategoryId = '__goal_contribution__';
+const String accountTransferCategoryId = '__account_transfer__';
 
 TransactionType transactionTypeFromName(String name) {
   return TransactionType.values.firstWhere(
@@ -91,6 +92,7 @@ class Transaction {
     this.recurrenceCount,
     this.goalId,
     this.goalContributionId,
+    this.transferToAccountId,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -115,10 +117,12 @@ class Transaction {
   /// Identifies a goal contribution mirrored in the transaction ledger.
   final String? goalId;
   final String? goalContributionId;
+  String? transferToAccountId;
   final DateTime createdAt;
 
   bool get isRecurring => recurrenceId != null && recurrence != null;
   bool get isGoalContribution => goalId != null && goalContributionId != null;
+  bool get isTransfer => transferToAccountId != null;
 
   bool get isFuture {
     final DateTime now = DateTime.now();
@@ -168,6 +172,7 @@ class Transaction {
       recurrenceCount: recurrenceCount,
       goalId: goalId,
       goalContributionId: goalContributionId,
+      transferToAccountId: transferToAccountId,
       createdAt: createdAt,
     );
   }
@@ -187,6 +192,7 @@ class Transaction {
     'recurrenceCount': recurrenceCount,
     'goalId': goalId,
     'goalContributionId': goalContributionId,
+    'transferToAccountId': transferToAccountId,
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -205,6 +211,7 @@ class Transaction {
     recurrenceCount: (json['recurrenceCount'] as num?)?.toInt(),
     goalId: json['goalId'] as String?,
     goalContributionId: json['goalContributionId'] as String?,
+    transferToAccountId: json['transferToAccountId'] as String?,
     createdAt:
         json['createdAt'] == null
             ? null

@@ -30,13 +30,19 @@ class TransactionTile extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final Color errorColor = theme.colorScheme.error;
     final bool isIncome = transaction.type == TransactionType.income;
+    final bool isTransfer = transaction.isTransfer;
     final bool settled = transaction.isSettled;
     final bool overdue = transaction.isOverdue;
     final Color amountColor =
-        overdue ? errorColor : (isIncome ? const Color(0xFF06D6A0) : errorColor);
-    final String title = transaction.description.trim().isEmpty
-        ? (category?.name ?? 'Sem categoria')
-        : transaction.description;
+        overdue
+            ? errorColor
+            : (isTransfer
+                ? theme.colorScheme.primary
+                : (isIncome ? const Color(0xFF06D6A0) : errorColor));
+    final String title =
+        transaction.description.trim().isEmpty
+            ? (category?.name ?? 'Sem categoria')
+            : transaction.description;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -59,9 +65,10 @@ class TransactionTile extends StatelessWidget {
               '${category?.name ?? 'Sem categoria'}${accountName != null ? ' • $accountName' : ''} • ${DateHelpers.full.format(transaction.date)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: overdue
-                  ? theme.textTheme.bodyMedium?.copyWith(color: errorColor)
-                  : null,
+              style:
+                  overdue
+                      ? theme.textTheme.bodyMedium?.copyWith(color: errorColor)
+                      : null,
             ),
           ),
           if (overdue) ...<Widget>[
@@ -103,7 +110,7 @@ class TransactionTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: <Widget>[
           Text(
-            '${isIncome ? '+' : '-'} ${Money.format(transaction.amount.abs(), '', symbol: currencySymbol)}',
+            '${isTransfer ? '↔' : (isIncome ? '+' : '-')} ${Money.format(transaction.amount.abs(), '', symbol: currencySymbol)}',
             style: theme.textTheme.titleSmall?.copyWith(
               color: amountColor,
               fontWeight: FontWeight.w700,
@@ -115,22 +122,21 @@ class TransactionTile extends StatelessWidget {
               onTap: onSettle,
               borderRadius: BorderRadius.circular(8),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(Icons.check_circle_outline,
-                        size: 13,
-                        color:
-                            overdue ? errorColor : const Color(0xFFF4A261)),
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 13,
+                      color: overdue ? errorColor : const Color(0xFFF4A261),
+                    ),
                     const SizedBox(width: 3),
                     Text(
                       'Efetivar',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontSize: 11,
-                        color:
-                            overdue ? errorColor : const Color(0xFFF4A261),
+                        color: overdue ? errorColor : const Color(0xFFF4A261),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -145,20 +151,20 @@ class TransactionTile extends StatelessWidget {
                 Icon(
                   settled ? Icons.check_circle : Icons.schedule,
                   size: 13,
-                  color: settled
-                      ? const Color(0xFF06D6A0)
-                      : const Color(0xFFF4A261),
+                  color:
+                      settled
+                          ? const Color(0xFF06D6A0)
+                          : const Color(0xFFF4A261),
                 ),
                 const SizedBox(width: 3),
                 Text(
-                  settled
-                      ? 'Efetivado'
-                      : (isIncome ? 'A receber' : 'A pagar'),
+                  settled ? 'Efetivado' : (isIncome ? 'A receber' : 'A pagar'),
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 11,
-                    color: settled
-                        ? const Color(0xFF06D6A0)
-                        : const Color(0xFFF4A261),
+                    color:
+                        settled
+                            ? const Color(0xFF06D6A0)
+                            : const Color(0xFFF4A261),
                     fontWeight: FontWeight.w600,
                   ),
                 ),

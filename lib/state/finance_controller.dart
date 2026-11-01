@@ -43,6 +43,15 @@ class FinanceController extends ChangeNotifier {
   String get currencySymbol => kCurrencySymbols['BRL'] ?? 'R\$';
 
   Category? categoryById(String id) {
+    if (id == accountTransferCategoryId) {
+      return Category(
+        id: accountTransferCategoryId,
+        name: 'Transferência',
+        kind: CategoryKind.both,
+        colorHex: '7B61FF',
+        iconCodePoint: Icons.swap_horiz_rounded.codePoint,
+      );
+    }
     if (id == goalContributionCategoryId) {
       return Category(
         id: goalContributionCategoryId,
@@ -61,6 +70,7 @@ class FinanceController extends ChangeNotifier {
   List<Category> get transactionCategories => <Category>[
     ...categories,
     categoryById(goalContributionCategoryId)!,
+    categoryById(accountTransferCategoryId)!,
   ];
 
   List<Category> get incomeCategories =>
@@ -77,7 +87,7 @@ class FinanceController extends ChangeNotifier {
   }) {
     Iterable<Transaction> result = transactions;
     if (type != null) {
-      result = result.where((Transaction t) => t.type == type);
+      result = result.where((Transaction t) => !t.isTransfer && t.type == type);
     }
     if (categoryId != null && categoryId.isNotEmpty) {
       result = result.where((Transaction t) => t.categoryId == categoryId);
@@ -113,7 +123,7 @@ class FinanceController extends ChangeNotifier {
   double sumFor(Iterable<Transaction> list, TransactionType type) {
     double total = 0;
     for (final Transaction t in list) {
-      if (t.type == type) total += t.amount;
+      if (!t.isTransfer && t.type == type) total += t.amount;
     }
     return total;
   }
@@ -147,8 +157,13 @@ class FinanceController extends ChangeNotifier {
     double total = a.initialBalance;
     for (final Transaction t in transactions) {
       if (t.isGoalContribution) continue;
-      if (t.accountId != id) continue;
       if (!t.isSettled) continue;
+      if (t.isTransfer) {
+        if (t.accountId == id) total -= t.amount;
+        if (t.transferToAccountId == id) total += t.amount;
+        continue;
+      }
+      if (t.accountId != id) continue;
       total += t.signedAmount;
     }
     for (final Goal g in goals) {
@@ -172,7 +187,8 @@ class FinanceController extends ChangeNotifier {
     final DateTime now = DateTime.now();
     return sumFor(
       transactions.where(
-        (Transaction t) => DateHelpers.isSameMonth(t.date, now),
+        (Transaction t) =>
+            DateHelpers.isSameMonth(t.date, now) && !t.isTransfer,
       ),
       TransactionType.income,
     );
@@ -182,7 +198,10 @@ class FinanceController extends ChangeNotifier {
     final DateTime now = DateTime.now();
     return sumFor(
       transactions.where(
-        (Transaction t) => DateHelpers.isSameMonth(t.date, now) && t.isSettled,
+        (Transaction t) =>
+            DateHelpers.isSameMonth(t.date, now) &&
+            t.isSettled &&
+            !t.isTransfer,
       ),
       TransactionType.expense,
     );
@@ -219,6 +238,7 @@ class FinanceController extends ChangeNotifier {
   }
 
   void updateTransaction(Transaction t) {
+    if (t.isTransfer) return;
     if (t.isGoalContribution) {
       updateGoalContribution(t);
       return;
@@ -251,6 +271,7 @@ class FinanceController extends ChangeNotifier {
     if (index < 0) return;
     final DateTime now = DateTime.now();
     final Transaction t = transactions[index];
+    if (t.isTransfer) return;
     if (t.isFuture) {
       t.date = DateTime(
         now.year,
@@ -576,7 +597,11 @@ class FinanceController extends ChangeNotifier {
     final String fallback = accounts.first.id;
     for (final Transaction t in transactions) {
       if (t.accountId == id) t.accountId = fallback;
+      if (t.transferToAccountId == id) t.transferToAccountId = fallback;
     }
+    transactions.removeWhere(
+      (Transaction t) => t.isTransfer && t.accountId == t.transferToAccountId,
+    );
     for (final Goal g in goals) {
       g.contributions =
           g.contributions
@@ -597,6 +622,38 @@ class FinanceController extends ChangeNotifier {
     _persistAccounts();
     _persistGoals();
     notifyListeners();
+  }
+
+  bool transferBetweenAccounts({
+    required String fromAccountId,
+    required String toAccountId,
+    required double amount,
+  }) {
+    final double roundedAmount = Money.round2(amount);
+    final Account? from = accountById(fromAccountId);
+    final Account? to = accountById(toAccountId);
+    if (from == null ||
+        to == null ||
+        fromAccountId == toAccountId ||
+        roundedAmount <= 0) {
+      return false;
+    }
+    transactions.add(
+      Transaction(
+        id: newId(),
+        type: TransactionType.expense,
+        amount: roundedAmount,
+        categoryId: accountTransferCategoryId,
+        date: DateTime.now(),
+        accountId: fromAccountId,
+        description: 'Transferência: ${from.name} → ${to.name}',
+        isPaid: true,
+        transferToAccountId: toAccountId,
+      ),
+    );
+    _persistTransactions();
+    notifyListeners();
+    return true;
   }
 
   void contributeToGoal(String id, String accountId, double amount) {
@@ -708,6 +765,7 @@ class FinanceController extends ChangeNotifier {
     final DateTime inclusive = DateTime(to.year, to.month, to.day, 23, 59, 59);
     final Map<String, double> map = <String, double>{};
     for (final Transaction t in transactions) {
+      if (t.isTransfer) continue;
       if (type != null && t.type != type) continue;
       if (t.date.isBefore(from) || t.date.isAfter(inclusive)) continue;
       map[t.categoryId] = (map[t.categoryId] ?? 0) + t.amount;
@@ -729,6 +787,7 @@ class FinanceController extends ChangeNotifier {
       final DateTime month = DateTime(now.year, now.month - i);
       double total = 0;
       for (final Transaction t in transactions) {
+        if (t.isTransfer) continue;
         if (type != null && t.type != type) continue;
         if (DateHelpers.isSameMonth(t.date, month)) total += t.amount;
       }

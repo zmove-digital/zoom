@@ -12,6 +12,7 @@ import '../../state/settings_controller.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/section_card.dart';
+import 'account_transfer_screen.dart';
 
 class AccountsScreen extends StatelessWidget {
   const AccountsScreen({super.key});
@@ -30,36 +31,50 @@ class AccountsScreen extends StatelessWidget {
         icon: const Icon(Icons.add),
         label: const Text('Nova conta'),
       ),
-      body: finance.accounts.isEmpty
-          ? EmptyState(
-              icon: Icons.account_balance_wallet_outlined,
-              title: 'Nenhuma conta ainda',
-              message:
-                  'Crie contas como Carteira, Banco ou Cartão de Crédito e acompanhe o saldo de cada uma.',
-              action: FilledButton.icon(
-                onPressed: () => _openEditor(context, null),
-                icon: const Icon(Icons.add),
-                label: const Text('Criar conta'),
-              ),
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-              children: <Widget>[
-                _totalCard(context, finance, sym, theme),
-                const SizedBox(height: 16),
-                ...finance.accounts.map(
-                  (Account a) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _accountCard(context, finance, a, sym, theme),
-                  ),
+      body:
+          finance.accounts.isEmpty
+              ? EmptyState(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'Nenhuma conta ainda',
+                message:
+                    'Crie contas como Carteira, Banco ou Cartão de Crédito e acompanhe o saldo de cada uma.',
+                action: FilledButton.icon(
+                  onPressed: () => _openEditor(context, null),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Criar conta'),
                 ),
-              ],
-            ),
+              )
+              : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                children: <Widget>[
+                  _totalCard(context, finance, sym, theme),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed:
+                        finance.accounts.length < 2
+                            ? null
+                            : () => _openTransfer(context),
+                    icon: const Icon(Icons.swap_horiz_rounded),
+                    label: const Text('Transferir entre contas'),
+                  ),
+                  const SizedBox(height: 16),
+                  ...finance.accounts.map(
+                    (Account a) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _accountCard(context, finance, a, sym, theme),
+                    ),
+                  ),
+                ],
+              ),
     );
   }
 
-  Widget _totalCard(BuildContext context, FinanceController finance,
-      String sym, ThemeData theme) {
+  Widget _totalCard(
+    BuildContext context,
+    FinanceController finance,
+    String sym,
+    ThemeData theme,
+  ) {
     final double total = finance.totalBalance;
     return SectionCard(
       child: Row(
@@ -70,20 +85,22 @@ class AccountsScreen extends StatelessWidget {
               color: theme.colorScheme.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.account_balance_wallet_rounded,
-                color: theme.colorScheme.primary),
+            child: Icon(
+              Icons.account_balance_wallet_rounded,
+              color: theme.colorScheme.primary,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Saldo total',
-                    style: theme.textTheme.bodySmall),
+                Text('Saldo total', style: theme.textTheme.bodySmall),
                 Text(
                   Money.format(total, '', symbol: sym),
-                  style: theme.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ],
             ),
@@ -93,8 +110,13 @@ class AccountsScreen extends StatelessWidget {
     );
   }
 
-  Widget _accountCard(BuildContext context, FinanceController finance,
-      Account a, String sym, ThemeData theme) {
+  Widget _accountCard(
+    BuildContext context,
+    FinanceController finance,
+    Account a,
+    String sym,
+    ThemeData theme,
+  ) {
     final double balance = finance.accountBalance(a.id);
     return SectionCard(
       onTap: () => _openEditor(context, a),
@@ -113,11 +135,14 @@ class AccountsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(a.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  a.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 Text(a.type.label, style: theme.textTheme.bodySmall),
               ],
             ),
@@ -147,6 +172,12 @@ class AccountsScreen extends StatelessWidget {
       builder: (_) => _AccountEditor(account: account),
     );
   }
+
+  void _openTransfer(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const AccountTransferScreen()),
+    );
+  }
 }
 
 class _AccountEditor extends StatefulWidget {
@@ -172,9 +203,10 @@ class _AccountEditorState extends State<_AccountEditor> {
     final Account? a = widget.account;
     _name = TextEditingController(text: a?.name ?? '');
     _initial = TextEditingController(
-      text: a == null || a.initialBalance == 0
-          ? ''
-          : a.initialBalance.toStringAsFixed(2).replaceAll('.', ','),
+      text:
+          a == null || a.initialBalance == 0
+              ? ''
+              : a.initialBalance.toStringAsFixed(2).replaceAll('.', ','),
     );
     _type = a?.type ?? AccountType.checking;
     _colorHex = a?.colorHex ?? _type.defaultColorHex;
@@ -192,26 +224,30 @@ class _AccountEditorState extends State<_AccountEditor> {
     final String name = _name.text.trim();
     final double initial = Money.round2(Money.parse(_initial.text));
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe o nome da conta')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Informe o nome da conta')));
       return;
     }
     if (_isEditing) {
-      finance.updateAccount(widget.account!.copyWith(
-        name: name,
-        type: _type,
-        initialBalance: initial,
-        colorHex: _colorHex,
-      ));
+      finance.updateAccount(
+        widget.account!.copyWith(
+          name: name,
+          type: _type,
+          initialBalance: initial,
+          colorHex: _colorHex,
+        ),
+      );
     } else {
-      finance.addAccount(Account(
-        id: newId(),
-        name: name,
-        type: _type,
-        initialBalance: initial,
-        colorHex: _colorHex,
-      ));
+      finance.addAccount(
+        Account(
+          id: newId(),
+          name: name,
+          type: _type,
+          initialBalance: initial,
+          colorHex: _colorHex,
+        ),
+      );
     }
     Navigator.of(context).pop();
   }
@@ -224,26 +260,29 @@ class _AccountEditorState extends State<_AccountEditor> {
       );
       return;
     }
-    final String fallback = finance.accounts
-        .firstWhere((Account a) => a.id != widget.account!.id)
-        .name;
+    final String fallback =
+        finance.accounts
+            .firstWhere((Account a) => a.id != widget.account!.id)
+            .name;
     final bool? ok = await showDialog<bool>(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('Excluir conta?'),
-        content: Text(
-            'Os lançamentos e valores guardados desta conta serão movidos para "$fallback".'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+      builder:
+          (BuildContext context) => AlertDialog(
+            title: const Text('Excluir conta?'),
+            content: Text(
+              'Os lançamentos e valores guardados desta conta serão movidos para "$fallback".',
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Excluir'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
     );
     if (ok == true && mounted) {
       finance.deleteAccount(widget.account!.id);
@@ -279,8 +318,9 @@ class _AccountEditorState extends State<_AccountEditor> {
             const SizedBox(height: 18),
             Text(
               _isEditing ? 'Editar conta' : 'Nova conta',
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w800),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -298,20 +338,21 @@ class _AccountEditorState extends State<_AccountEditor> {
                 labelText: 'Tipo de conta',
                 prefixIcon: Icon(Icons.account_balance_wallet_outlined),
               ),
-              items: AccountType.values
-                  .map(
-                    (AccountType t) => DropdownMenuItem<AccountType>(
-                      value: t,
-                      child: Row(
-                        children: <Widget>[
-                          Icon(t.icon, size: 18),
-                          const SizedBox(width: 8),
-                          Text(t.label),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
+              items:
+                  AccountType.values
+                      .map(
+                        (AccountType t) => DropdownMenuItem<AccountType>(
+                          value: t,
+                          child: Row(
+                            children: <Widget>[
+                              Icon(t.icon, size: 18),
+                              const SizedBox(width: 8),
+                              Text(t.label),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
               onChanged: (AccountType? v) {
                 if (v == null) return;
                 setState(() {
@@ -323,8 +364,9 @@ class _AccountEditorState extends State<_AccountEditor> {
             const SizedBox(height: 14),
             TextField(
               controller: _initial,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: <TextInputFormatter>[
                 FilteringTextInputFormatter.allow(RegExp(r'[0-9.,-]')),
               ],
@@ -340,24 +382,28 @@ class _AccountEditorState extends State<_AccountEditor> {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: kPaletteHex.map((String hex) {
-                final bool selected = hex == _colorHex;
-                return GestureDetector(
-                  onTap: () => setState(() => _colorHex = hex),
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: colorFromHex(hex),
-                      shape: BoxShape.circle,
-                      border: selected
-                          ? Border.all(
-                              color: theme.colorScheme.onSurface, width: 3)
-                          : null,
-                    ),
-                  ),
-                );
-              }).toList(),
+              children:
+                  kPaletteHex.map((String hex) {
+                    final bool selected = hex == _colorHex;
+                    return GestureDetector(
+                      onTap: () => setState(() => _colorHex = hex),
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: colorFromHex(hex),
+                          shape: BoxShape.circle,
+                          border:
+                              selected
+                                  ? Border.all(
+                                    color: theme.colorScheme.onSurface,
+                                    width: 3,
+                                  )
+                                  : null,
+                        ),
+                      ),
+                    );
+                  }).toList(),
             ),
             const SizedBox(height: 24),
             Row(

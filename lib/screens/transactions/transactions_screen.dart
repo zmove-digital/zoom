@@ -75,7 +75,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     double settledBalance = 0;
     for (final Transaction t in list) {
-      if (t.isSettled && !t.isGoalContribution) {
+      if (t.isSettled && !t.isGoalContribution && !t.isTransfer) {
         settledBalance += t.signedAmount;
       }
     }
@@ -194,13 +194,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     category: finance.categoryById(t.categoryId),
                     currencySymbol: sym,
                     accountName: finance.accountById(t.accountId)?.name,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => TransactionEditorScreen(existing: t),
-                        ),
-                      );
-                    },
+                    onTap:
+                        t.isTransfer
+                            ? null
+                            : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder:
+                                      (_) =>
+                                          TransactionEditorScreen(existing: t),
+                                ),
+                              );
+                            },
                     onLongPress: () => _confirmDelete(t),
                     onSettle: () => finance.settleTransaction(t.id),
                   );
@@ -377,8 +382,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       context: context,
       builder:
           (BuildContext context) => AlertDialog(
-            title: const Text('Excluir lançamento?'),
-            content: const Text('Essa ação não pode ser desfeita.'),
+            title: Text(
+              t.isTransfer ? 'Excluir transferência?' : 'Excluir lançamento?',
+            ),
+            content: Text(
+              t.isTransfer
+                  ? 'Essa transferência será removida das contas de origem e destino. Essa ação não pode ser desfeita.'
+                  : 'Essa ação não pode ser desfeita.',
+            ),
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.pop(context, false),

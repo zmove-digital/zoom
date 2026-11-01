@@ -147,4 +147,63 @@ void main() {
     expect(finance.accountBalance('account-1'), 960);
     expect(finance.expenseThisMonth, 40);
   });
+
+  test(
+    'transfers move value between accounts without changing total balance',
+    () {
+      final FinanceController finance = controllerWith();
+      finance.addAccount(
+        Account(id: 'account-2', name: 'Carteira', type: AccountType.cash),
+      );
+      final double totalBefore = finance.totalBalance;
+
+      expect(
+        finance.transferBetweenAccounts(
+          fromAccountId: 'account-1',
+          toAccountId: 'account-2',
+          amount: 125.75,
+        ),
+        isTrue,
+      );
+
+      final Transaction transfer = finance.transactions.single;
+      expect(transfer.isTransfer, isTrue);
+      expect(transfer.transferToAccountId, 'account-2');
+      expect(transfer.categoryId, accountTransferCategoryId);
+      expect(transfer.isSettled, isTrue);
+      expect(finance.accountBalance('account-1'), 874.25);
+      expect(finance.accountBalance('account-2'), 125.75);
+      expect(finance.totalBalance, totalBefore);
+      expect(finance.incomeThisMonth, 0);
+      expect(finance.expenseThisMonth, 0);
+      expect(finance.sumFor(finance.transactions, TransactionType.expense), 0);
+      expect(finance.totalsByCategory(DateTime(2000), DateTime(2100)), isEmpty);
+
+      final Transaction restored = Transaction.fromJson(transfer.toJson());
+      expect(restored.isTransfer, isTrue);
+      expect(restored.transferToAccountId, 'account-2');
+
+      finance.deleteTransaction(transfer.id);
+      expect(finance.transactions, isEmpty);
+      expect(finance.accountBalance('account-1'), 1000);
+      expect(finance.accountBalance('account-2'), 0);
+    },
+  );
+
+  test('deleting a transfer endpoint removes a now-redundant transfer', () {
+    final FinanceController finance = controllerWith();
+    finance.addAccount(
+      Account(id: 'account-2', name: 'Carteira', type: AccountType.cash),
+    );
+    finance.transferBetweenAccounts(
+      fromAccountId: 'account-1',
+      toAccountId: 'account-2',
+      amount: 50,
+    );
+
+    finance.deleteAccount('account-2');
+
+    expect(finance.transactions, isEmpty);
+    expect(finance.accountBalance('account-1'), 1000);
+  });
 }
