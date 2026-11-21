@@ -127,6 +127,12 @@ class SeedData {
       if (!category.isDefault) continue;
       final _CategorySpec? spec = _categoryRenames[_normalize(category.name)];
       if (spec == null) continue;
+      if (category.name == spec.name &&
+          category.kind == spec.kind &&
+          category.colorHex == spec.color &&
+          category.iconCodePoint == spec.icon) {
+        continue;
+      }
       category
         ..name = spec.name
         ..kind = spec.kind
