@@ -73,17 +73,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final double income = finance.sumFor(list, TransactionType.income);
     final double expense = finance.sumFor(list, TransactionType.expense);
 
-    double settledBalance = 0;
-    for (final Transaction t in list) {
-      if (t.isSettled && !t.isGoalContribution && !t.isTransfer) {
-        settledBalance += t.signedAmount;
-      }
-    }
-    // O que foi guardado em metas no mês também sai do saldo livre.
-    settledBalance -= finance.goalContributionsBetween(from, to);
-
-    // Saldo geral: saldo inicial das contas + tudo que não é futuro - metas.
-    final double generalBalance = finance.totalBalance;
+    // Saldo disponível: saldo inicial das contas + somente lançamentos
+    // efetivados - valores guardados em metas. Lançamentos pendentes não entram.
+    final double availableBalance = finance.totalBalance;
 
     final int overdueCount = list.where((Transaction t) => t.isOverdue).length;
 
@@ -101,8 +93,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     sym,
                     income,
                     expense,
-                    settledBalance,
-                    generalBalance,
+                    availableBalance,
                   ),
                   if (overdueCount > 0) ...<Widget>[
                     const SizedBox(height: 10),
@@ -233,8 +224,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     String sym,
     double income,
     double expense,
-    double settledBalance,
-    double generalBalance,
+    double availableBalance,
   ) {
     return SectionCard(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
@@ -279,18 +269,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    'Efetivados Saldo Atual Mês: ${Money.format(settledBalance, '', symbol: sym)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    'Saldo Atual Geral: ${Money.format(generalBalance, '', symbol: sym)}',
+                    'Saldo: ${Money.format(availableBalance, '', symbol: sym)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface,
                       fontWeight: FontWeight.w700,
