@@ -7,6 +7,7 @@ import 'state/settings_controller.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/shell/app_shell.dart';
 import 'screens/lock/lock_screen.dart';
+import 'screens/splash/splash_screen.dart';
 
 class ZoomApp extends StatelessWidget {
   const ZoomApp({super.key});
@@ -24,7 +25,7 @@ class ZoomApp extends StatelessWidget {
       theme: AppTheme.build(settings.settings, Brightness.light),
       darkTheme: AppTheme.build(settings.settings, Brightness.dark),
       themeMode: settings.themeMode,
-      home: const _Root(),
+      home: const SplashScreen(child: _Root()),
     );
   }
 }
