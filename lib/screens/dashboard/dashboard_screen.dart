@@ -4,19 +4,14 @@ import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
-import '../../data/models/budget.dart';
-import '../../data/models/category.dart';
 import '../../data/models/goal.dart';
 import '../../data/models/transaction.dart';
 import '../../state/agenda_controller.dart';
 import '../../state/finance_controller.dart';
 import '../../state/settings_controller.dart';
 import '../../widgets/app_scaffold.dart';
-import '../../widgets/category_avatar.dart';
-import '../../widgets/empty_state.dart';
 import '../../widgets/hero_card.dart';
 import '../../widgets/section_card.dart';
-import '../../widgets/transaction_tile.dart';
 import '../accounts/accounts_screen.dart';
 import '../categories/categories_screen.dart';
 import '../goals/goals_screen.dart';
@@ -155,17 +150,11 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 20),
             _quickActions(context),
             const SizedBox(height: 20),
-            if (finance.budgetsForMonth(DateTime.now()).isNotEmpty) ...<Widget>[
-              _budgetSection(context, finance, sym),
-              const SizedBox(height: 20),
-            ],
             if (finance.goals.isNotEmpty) ...<Widget>[
               _goalsSection(context, finance, sym, theme),
               const SizedBox(height: 20),
             ],
             _agendaShortcut(context, agenda, theme),
-            const SizedBox(height: 20),
-            _recentTransactions(context, finance, sym, theme),
           ],
         ),
       ),
@@ -403,87 +392,6 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _budgetSection(
-    BuildContext context,
-    FinanceController finance,
-    String sym,
-  ) {
-    final ThemeData theme = Theme.of(context);
-    final List<Budget> budgets = finance.budgetsForMonth(DateTime.now());
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Orçamentos do mês',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 10),
-        SectionCard(
-          child: Column(
-            children:
-                budgets.map((Budget b) {
-                  final Category? c = finance.categoryById(b.categoryId);
-                  final double spent = finance.spentInCategory(
-                    b.categoryId,
-                    DateTime.now(),
-                  );
-                  final double ratio =
-                      (b.limit <= 0 ? 0.0 : spent / b.limit)
-                          .clamp(0.0, 1.5)
-                          .toDouble();
-                  final bool over = spent > b.limit;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Row(
-                          children: <Widget>[
-                            CategoryAvatar(category: c, size: 30),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                c?.name ?? 'Categoria',
-                                style: theme.textTheme.bodyMedium,
-                              ),
-                            ),
-                            Text(
-                              '${Money.format(spent, '', symbol: sym)} / ${Money.format(b.limit, '', symbol: sym)}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color:
-                                    over
-                                        ? theme.colorScheme.error
-                                        : theme.colorScheme.outline,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: ratio.clamp(0, 1).toDouble(),
-                            minHeight: 8,
-                            backgroundColor:
-                                theme.colorScheme.surfaceContainerHighest,
-                            color:
-                                over
-                                    ? theme.colorScheme.error
-                                    : (c?.color ?? theme.colorScheme.primary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _goalsSection(
     BuildContext context,
     FinanceController finance,
@@ -637,87 +545,6 @@ class DashboardScreen extends StatelessWidget {
           const Icon(Icons.chevron_right),
         ],
       ),
-    );
-  }
-
-  Widget _recentTransactions(
-    BuildContext context,
-    FinanceController finance,
-    String sym,
-    ThemeData theme,
-  ) {
-    final List<Transaction> recent = finance.filtered().take(5).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Text(
-              'Últimos lançamentos',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const TransactionsScreen(embedded: true),
-                  ),
-                );
-              },
-              child: const Text('Ver tudo'),
-            ),
-          ],
-        ),
-        if (recent.isEmpty)
-          SectionCard(
-            child: EmptyState(
-              icon: Icons.receipt_long_outlined,
-              title: 'Nenhum lançamento ainda',
-              message:
-                  'Toque no + para registrar sua primeira receita ou despesa.',
-              action: FilledButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const TransactionEditorScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar lançamento'),
-              ),
-            ),
-          )
-        else
-          SectionCard(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Column(
-              children:
-                  recent
-                      .map(
-                        (Transaction t) => TransactionTile(
-                          transaction: t,
-                          category: finance.categoryById(t.categoryId),
-                          currencySymbol: sym,
-                          accountName: finance.accountById(t.accountId)?.name,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder:
-                                    (_) => TransactionEditorScreen(existing: t),
-                              ),
-                            );
-                          },
-                          onSettle: () => finance.settleTransaction(t.id),
-                        ),
-                      )
-                      .toList(),
-            ),
-          ),
-      ],
     );
   }
 }
