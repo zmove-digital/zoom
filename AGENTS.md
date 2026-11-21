@@ -4,19 +4,26 @@ App Flutter **ZOOM** (ex-Grana): gestor financeiro pessoal, 100% offline e
 personalizavel. Package Dart `zoom`, Android `applicationId`/namespace
 `br.com.zmove.zoom`, iOS bundle `br.com.zmove.zoom`. Fonte **Poppins**.
 
-- **Local:** `Z:\dev\projects\ZOOM` (unidade Z / SSD "DEV").
-- **GitHub:** `zmove-digital/zoom` (SSH `C:\Users\Rezende\.ssh\id_ed25519`).
+- **Local (este PC):** `D:\dev\projects\ZOOM`. No SSD "DEV" o caminho e
+  `Z:\dev\projects\ZOOM`; os scripts detectam a raiz sozinhos.
+- **GitHub:** `zmove-digital/zoom` (SSH `C:\Users\rodri\.ssh\id_ed25519`).
 - **Dev/CI:** rodar sempre com `workdir` explicito.
 
-## Toolchain (unidade Z)
-- JDK 21 (`Z:\dev\jdk21`), Flutter 3.47.7 / Dart 3.13.5 (`Z:\dev\flutter`).
-- Android SDK `Z:\dev\android-sdk` (android-36, build-tools 36.0.0, ndk 27, cmake 3.22.1, emulator).
-- Gradle 8.14.3, AGP 8.11.1, Kotlin 2.2.20; `GRADLE_USER_HOME=Z:\dev\gradle-home`.
-- `PUB_CACHE=Z:\dev\pub-cache`; `ANDROID_AVD_HOME=Z:\dev\avd`.
+## Toolchain (raiz dev, auto-detectada: `D:\dev` ou `Z:\dev`)
+- JDK 21 (`<dev>\jdk21`), Flutter 3.47.7 / Dart 3.13.5 (`<dev>\flutter`).
+- Android SDK `<dev>\android-sdk` (android-36, build-tools 36.0.0, ndk 27, cmake 3.22.1, emulator).
+- Gradle 8.14.3, AGP 8.11.1, Kotlin 2.2.20; `GRADLE_USER_HOME=<dev>\gradle-home`.
+- `PUB_CACHE=<dev>\pub-cache`; `ANDROID_AVD_HOME=<dev>\avd`.
+- Toolchain registrado nas variaveis de usuario do Windows (`JAVA_HOME`,
+  `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `GRADLE_USER_HOME`, `PUB_CACHE`,
+  `ANDROID_AVD_HOME`) e no `PATH` do usuario: `flutter`, `dart`, `git`, `java`,
+  `adb` e `emulator` funcionam em qualquer terminal novo. `dev.ps1` continua
+  funcionando e detecta a raiz sozinho.
 
 ## Comandos
 - Rodar app (sobe o emulador e encaixa a janela a direita):
   `.\dev.ps1`  (aceita flags do `flutter run`, ex.: `.\dev.ps1 --release`, `-d windows`).
+  Builds de Windows desktop usam o VS Build Tools (workload C++), ja instalado.
 - Analise: `flutter analyze`
 - Testes: `flutter test`  (27 testes)
 - APK debug: `flutter build apk --debug`

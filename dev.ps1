@@ -6,19 +6,23 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 
-$env:JAVA_HOME        = 'Z:\dev\jdk21'
-$env:ANDROID_HOME     = 'Z:\dev\android-sdk'
-$env:ANDROID_SDK_ROOT = 'Z:\dev\android-sdk'
-$env:GRADLE_USER_HOME = 'Z:\dev\gradle-home'
-$env:PUB_CACHE        = 'Z:\dev\pub-cache'
-$env:ANDROID_AVD_HOME = 'Z:\dev\avd'
+# Raiz das ferramentas: <unidade>:\dev (o projeto fica em <unidade>:\dev\projects\ZOOM).
+# Assim funciona tanto no SSD Z: quanto no disco D:.
+$DevRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+
+$env:JAVA_HOME        = Join-Path $DevRoot 'jdk21'
+$env:ANDROID_HOME     = Join-Path $DevRoot 'android-sdk'
+$env:ANDROID_SDK_ROOT = Join-Path $DevRoot 'android-sdk'
+$env:GRADLE_USER_HOME = Join-Path $DevRoot 'gradle-home'
+$env:PUB_CACHE        = Join-Path $DevRoot 'pub-cache'
+$env:ANDROID_AVD_HOME = Join-Path $DevRoot 'avd'
 
 $extra = @(
-  'Z:\dev\flutter\bin',
-  'Z:\dev\jdk21\bin',
-  'Z:\dev\git\cmd',
-  'Z:\dev\android-sdk\platform-tools',
-  'Z:\dev\android-sdk\emulator'
+  (Join-Path $DevRoot 'flutter\bin'),
+  (Join-Path $DevRoot 'jdk21\bin'),
+  (Join-Path $DevRoot 'git\cmd'),
+  (Join-Path $DevRoot 'android-sdk\platform-tools'),
+  (Join-Path $DevRoot 'android-sdk\emulator')
 )
 foreach ($p in $extra) {
   if (($env:Path -split ';') -notcontains $p) { $env:Path = "$p;$env:Path" }
@@ -58,8 +62,8 @@ function Fit-EmulatorWindow {
   [void][ZoomWin]::MoveWindow($proc.MainWindowHandle, $wa.Right - $nw - 20, 20, $nw, $nh, $true)
 }
 
-$adb = 'Z:\dev\android-sdk\platform-tools\adb.exe'
-$emu = 'Z:\dev\android-sdk\emulator\emulator.exe'
+$adb = Join-Path $DevRoot 'android-sdk\platform-tools\adb.exe'
+$emu = Join-Path $DevRoot 'android-sdk\emulator\emulator.exe'
 $avd = 'Pixel_8'
 
 $targetGiven = @($FlutterArgs) | Where-Object { $_ -in @('-d', '--device-id') }

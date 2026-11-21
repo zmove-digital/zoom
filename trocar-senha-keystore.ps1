@@ -20,7 +20,8 @@ $ErrorActionPreference = 'Stop'
 function Get-Keytool {
     $candidates = @()
     if ($env:JAVA_HOME) { $candidates += (Join-Path $env:JAVA_HOME 'bin\keytool.exe') }
-    $candidates += 'Z:\dev\jdk21\bin\keytool.exe'
+    $devRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+    $candidates += (Join-Path $devRoot 'jdk21\bin\keytool.exe')
     foreach ($c in $candidates) {
         if ($c -and (Test-Path -LiteralPath $c)) { return $c }
     }
