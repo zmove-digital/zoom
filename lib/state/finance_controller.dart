@@ -115,9 +115,14 @@ class FinanceController extends ChangeNotifier {
             t.notes.toLowerCase().contains(q),
       );
     }
-    final List<Transaction> list =
-        result.toList()
-          ..sort((Transaction a, Transaction b) => b.date.compareTo(a.date));
+    final List<Transaction> list = result.toList()..sort(
+      (Transaction a, Transaction b) {
+        final int byDate = b.date.compareTo(a.date);
+        if (byDate != 0) return byDate;
+        // Mesma data: mais recente primeiro, de forma estável.
+        return b.createdAt.compareTo(a.createdAt);
+      },
+    );
     return list;
   }
 

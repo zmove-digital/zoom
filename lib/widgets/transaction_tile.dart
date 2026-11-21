@@ -58,50 +58,81 @@ class TransactionTile extends StatelessWidget {
           color: overdue ? errorColor : null,
         ),
       ),
-      subtitle: Row(
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Flexible(
-            child: Text(
-              '${category?.name ?? 'Sem categoria'}${accountName != null ? ' • $accountName' : ''} • ${DateHelpers.full.format(transaction.date)}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style:
-                  overdue
-                      ? theme.textTheme.bodyMedium?.copyWith(color: errorColor)
-                      : null,
-            ),
+          Text(
+            '${category?.name ?? 'Sem categoria'}${accountName != null ? ' • $accountName' : ''}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style:
+                overdue
+                    ? theme.textTheme.bodyMedium?.copyWith(color: errorColor)
+                    : null,
           ),
-          if (overdue) ...<Widget>[
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-              decoration: BoxDecoration(
-                color: errorColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
+          const SizedBox(height: 3),
+          Wrap(
+            spacing: 6,
+            runSpacing: 2,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: <Widget>[
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    Icons.event_outlined,
+                    size: 13,
+                    color:
+                        overdue
+                            ? errorColor
+                            : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    DateHelpers.full.format(transaction.date),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color:
+                          overdue
+                              ? errorColor
+                              : theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-              child: Text(
-                'VENCIDO',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 10,
-                  color: errorColor,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
+              if (overdue) ...<Widget>[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: errorColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'VENCIDO',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 10,
+                      color: errorColor,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
-          if (transaction.isRecurring) ...<Widget>[
-            const SizedBox(width: 6),
-            Icon(Icons.repeat, size: 14, color: theme.colorScheme.primary),
-            const SizedBox(width: 2),
-            Text(
-              transaction.recurrence!.label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+              ],
+              if (transaction.isRecurring) ...<Widget>[
+                Icon(Icons.repeat, size: 14, color: theme.colorScheme.primary),
+                Text(
+                  transaction.recurrence!.label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
       trailing: Column(
