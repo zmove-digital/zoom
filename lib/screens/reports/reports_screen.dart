@@ -21,6 +21,17 @@ enum _Period { month, last30, year, all, custom }
 
 enum _PieMode { expense, income, both }
 
+enum _BalanceMode { category, account }
+
+class _BalanceRow {
+  const _BalanceRow(this.name, this.income, this.expense, this.color);
+
+  final String name;
+  final double income;
+  final double expense;
+  final Color color;
+}
+
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
@@ -31,6 +42,7 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   _Period _period = _Period.month;
   _PieMode _pieMode = _PieMode.expense;
+  _BalanceMode _balanceMode = _BalanceMode.category;
   DateTime? _customFrom;
   DateTime? _customTo;
   _Period _catPeriod = _Period.month;
@@ -404,8 +416,243 @@ class _ReportsScreenState extends State<ReportsScreen> {
           SectionCard(
             child: SizedBox(height: 220, child: _barChart(finance, theme, sym)),
           ),
+          const SizedBox(height: 20),
+          _balanceSection(finance, theme, sym),
         ],
       ),
+    );
+  }
+
+  Widget _balanceSection(
+    FinanceController finance,
+    ThemeData theme,
+    String sym,
+  ) {
+    final DateTime now = DateTime.now();
+    final List<Transaction> month = finance.filtered(
+      from: DateHelpers.startOfMonth(now),
+      to: DateHelpers.endOfMonth(now),
+    );
+    final double income = finance.sumFor(month, TransactionType.income);
+    final double expense = finance.sumFor(month, TransactionType.expense);
+    final double balance = income - expense;
+
+    final bool byCategory = _balanceMode == _BalanceMode.category;
+    final List<_BalanceRow> rows = <_BalanceRow>[];
+
+    if (byCategory) {
+      for (final Category category in finance.transactionCategories) {
+        final Iterable<Transaction> fromCategory =
+            month.where((Transaction t) => t.categoryId == category.id);
+        final double catIncome = finance.sumFor(
+          fromCategory,
+          TransactionType.income,
+        );
+        final double catExpense = finance.sumFor(
+          fromCategory,
+          TransactionType.expense,
+        );
+        if (catIncome > 0 || catExpense > 0) {
+          rows.add(
+            _BalanceRow(category.name, catIncome, catExpense, category.color),
+          );
+        }
+      }
+    } else {
+      for (final account in finance.accounts) {
+        final Iterable<Transaction> fromAccount =
+            month.where((Transaction t) => t.accountId == account.id);
+        final double accIncome = finance.sumFor(
+          fromAccount,
+          TransactionType.income,
+        );
+        final double accExpense = finance.sumFor(
+          fromAccount,
+          TransactionType.expense,
+        );
+        if (accIncome > 0 || accExpense > 0) {
+          rows.add(
+            _BalanceRow(account.name, accIncome, accExpense, account.color),
+          );
+        }
+      }
+    }
+    rows.sort(
+      (a, b) => (b.income + b.expense).compareTo(a.income + a.expense),
+    );
+
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            'Balanço mensal',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            children: <Widget>[
+              ChoiceChip(
+                label: const Text('Balanço por categoria'),
+                selected: byCategory,
+                onSelected: (_) => setState(
+                  () => _balanceMode = _BalanceMode.category,
+                ),
+              ),
+              ChoiceChip(
+                label: const Text('Balanço por conta'),
+                selected: !byCategory,
+                onSelected: (_) =>
+                    setState(() => _balanceMode = _BalanceMode.account),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text(
+                'Saldo do mês',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                Money.format(balance, '', symbol: sym),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color:
+                      balance >= 0
+                          ? const Color(0xFF06D6A0)
+                          : theme.colorScheme.error,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (rows.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'Sem lançamentos neste mês',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(
+                  child: _balanceColumn(
+                    'Receitas',
+                    rows,
+                    true,
+                    const Color(0xFF06D6A0),
+                    Icons.arrow_upward,
+                    theme,
+                    sym,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _balanceColumn(
+                    'Despesas',
+                    rows,
+                    false,
+                    const Color(0xFFEF476F),
+                    Icons.arrow_downward,
+                    theme,
+                    sym,
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _balanceColumn(
+    String title,
+    List<_BalanceRow> rows,
+    bool income,
+    Color color,
+    IconData icon,
+    ThemeData theme,
+    String sym,
+  ) {
+    final List<_BalanceRow> items =
+        rows.where((row) => income ? row.income > 0 : row.expense > 0).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Icon(icon, size: 15, color: color),
+            const SizedBox(width: 5),
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        if (items.isEmpty)
+          Text(
+            'Nenhum',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          ...items.map(
+            (row) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: row.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      row.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    Money.format(
+                      income ? row.income : row.expense,
+                      '',
+                      symbol: sym,
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 
