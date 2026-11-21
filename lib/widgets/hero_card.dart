@@ -24,6 +24,12 @@ class HeroCard extends StatelessWidget {
     final String masked =
         currencySymbol.isEmpty ? '••••••' : '$currencySymbol ••••••';
 
+    // O saldo é o dado principal do card: mantém um tamanho grande e constante
+    // mesmo quando o usuário aumenta a fonte em Ajustes. O FittedBox abaixo
+    // só entra em ação para números excepcionalmente longos.
+    final double balanceFontSize =
+        (MediaQuery.of(context).size.width * 0.115).clamp(34.0, 52.0).toDouble();
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26),
@@ -94,7 +100,10 @@ class HeroCard extends StatelessWidget {
                             ? masked
                             : Money.format(balance, '', symbol: currencySymbol),
                         maxLines: 1,
-                        style: theme.textTheme.displayLarge?.copyWith(
+                        style:
+                            (theme.textTheme.displayLarge ?? const TextStyle())
+                                .copyWith(
+                          fontSize: balanceFontSize,
                           color: onHero,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -1.5,

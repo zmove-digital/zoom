@@ -73,6 +73,25 @@ class SettingsController extends ChangeNotifier {
   void setRoundedCards(bool value) =>
       update((AppSettings s) => s.copyWith(useRoundedCards: value));
 
+  /// Volta a aparência original (tema, cores, fonte, opacidade) sem apagar
+  /// dados financeiros, preferências pessoais, e-mail, moeda ou PIN.
+  void resetAppearance() {
+    final AppSettings original = AppSettings();
+    update(
+      (AppSettings s) => s.copyWith(
+        themeMode: original.themeMode,
+        seedColorHex: original.seedColorHex,
+        accentColorHex: original.accentColorHex,
+        backgroundImagePath: null,
+        backgroundOpacity: original.backgroundOpacity,
+        cardOpacity: original.cardOpacity,
+        fontScale: original.fontScale,
+        useRoundedCards: original.useRoundedCards,
+        hideBalance: original.hideBalance,
+      ),
+    );
+  }
+
   void setSoundEnabled(bool value) =>
       update((AppSettings s) => s.copyWith(soundEnabled: value));
 

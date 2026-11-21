@@ -271,6 +271,45 @@ class _AppearanceSection extends StatelessWidget {
                 value: settings.settings.useRoundedCards,
                 onChanged: settings.setRoundedCards,
               ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.restart_alt),
+                title: const Text('Voltar à configuração original'),
+                subtitle: const Text(
+                  'Tema, cores e fonte — seus dados ficam intactos',
+                ),
+                onTap: () async {
+                  final bool? confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (BuildContext context) => AlertDialog(
+                      title: const Text('Voltar à configuração original?'),
+                      content: const Text(
+                        'Restaura tema, cores, imagem de fundo, opacidade, '
+                        'tamanho da fonte e forma dos cards. Lançamentos, '
+                        'contas, metas, categorias e seus dados pessoais '
+                        'não serão alterados.',
+                      ),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Restaurar'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm != true || !context.mounted) return;
+                  settings.resetAppearance();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Configuração original restaurada.'),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
