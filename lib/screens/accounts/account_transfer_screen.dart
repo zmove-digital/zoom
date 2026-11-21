@@ -132,7 +132,7 @@ class _AccountTransferScreenState extends State<AccountTransferScreen> {
             ],
             decoration: InputDecoration(
               labelText: 'Valor',
-              prefixText: '$currencySymbol ',
+              prefixText: currencySymbol,
               prefixIcon: const Icon(Icons.attach_money),
             ),
           ),

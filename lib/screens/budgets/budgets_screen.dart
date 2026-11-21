@@ -43,7 +43,7 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             labelText: 'Limite mensal',
-            prefixText: '$sym ',
+            prefixText: sym,
           ),
         ),
         actions: <Widget>[

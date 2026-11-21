@@ -465,7 +465,7 @@ class _TransactionEditorScreenState extends State<TransactionEditorScreen> {
             ],
             decoration: InputDecoration(
               labelText: 'Valor',
-              prefixText: '${settings.currencySymbol} ',
+              prefixText: settings.currencySymbol,
               prefixIcon: const Icon(Icons.attach_money),
             ),
             style: theme.textTheme.headlineSmall,

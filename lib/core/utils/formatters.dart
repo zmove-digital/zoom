@@ -2,15 +2,14 @@ import 'package:intl/intl.dart';
 
 class Money {
   static String format(double value, String currencyCode, {String symbol = ''}) {
-    final NumberFormat formatter = NumberFormat.currency(
-      locale: 'pt_BR',
-      symbol: symbol.isEmpty ? '' : '$symbol ',
-      decimalDigits: 2,
-    );
-    return formatter.format(value).trim();
+    // O NumberFormat.currency insere um espaço (não separável) depois do
+    // símbolo. Montamos o prefixo manualmente para manter "R$1.230,00".
+    final NumberFormat formatter = NumberFormat('#,##0.00', 'pt_BR');
+    final String amount = formatter.format(value.abs());
+    return value.isNegative ? '-$symbol$amount' : '$symbol$amount';
   }
 
-  static String compact(double value, String symbol, {bool space = true}) {
+  static String compact(double value, String symbol, {bool space = false}) {
     final String prefix = space ? '$symbol ' : symbol;
     final double abs = value.abs();
     if (abs >= 1000000) {

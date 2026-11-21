@@ -22,7 +22,7 @@ class HeroCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     const Color onHero = Color(0xFFFFFFFF);
     final String masked =
-        currencySymbol.isEmpty ? '••••••' : '$currencySymbol ••••••';
+        currencySymbol.isEmpty ? '••••••' : '$currencySymbol••••••';
 
     // O saldo é o dado principal do card: mantém um tamanho grande e constante
     // mesmo quando o usuário aumenta a fonte em Ajustes. O FittedBox abaixo

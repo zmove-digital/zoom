@@ -224,7 +224,7 @@ class _ContributeDialogState extends State<_ContributeDialog> {
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: 'Valor',
-                    prefixText: '${widget.sym} ',
+                    prefixText: widget.sym,
                   ),
                 ),
                 const SizedBox(height: 14),
