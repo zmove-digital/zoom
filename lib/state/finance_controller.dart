@@ -109,11 +109,14 @@ class FinanceController extends ChangeNotifier {
     }
     if (search != null && search.trim().isNotEmpty) {
       final String q = search.toLowerCase();
-      result = result.where(
-        (Transaction t) =>
-            t.description.toLowerCase().contains(q) ||
-            t.notes.toLowerCase().contains(q),
-      );
+      result = result.where((Transaction t) {
+        if (t.description.toLowerCase().contains(q) ||
+            t.notes.toLowerCase().contains(q)) {
+          return true;
+        }
+        final String? categoryName = categoryById(t.categoryId)?.name;
+        return categoryName != null && categoryName.toLowerCase().contains(q);
+      });
     }
     final List<Transaction> list = result.toList()..sort(
       (Transaction a, Transaction b) {

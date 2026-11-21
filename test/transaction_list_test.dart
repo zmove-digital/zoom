@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zoom/core/constants.dart';
 import 'package:zoom/core/utils/formatters.dart';
+import 'package:zoom/data/models/category.dart';
 import 'package:zoom/data/models/transaction.dart';
 import 'package:zoom/data/storage/local_database.dart';
 import 'package:zoom/state/finance_controller.dart';
@@ -58,6 +59,65 @@ void main() {
       finance.filtered().map((t) => t.id).toList(),
       <String>['novo', 'meio', 'recente-mesma-data', 'antigo'],
     );
+  });
+
+  test('busca encontra lançamentos pela descrição ou pelo nome da categoria', () {
+    final LocalDatabase db = LocalDatabase.inMemory();
+    db.setList(
+      DbKeys.categories,
+      <Map<String, dynamic>>[
+        Category(
+          id: 'mercado',
+          name: 'Supermercado',
+          kind: CategoryKind.expense,
+          colorHex: 'FF6B6B',
+          iconCodePoint: 0xe59c,
+        ).toJson(),
+        Category(
+          id: 'farmacia',
+          name: 'Farmácia',
+          kind: CategoryKind.expense,
+          colorHex: 'EF476F',
+          iconCodePoint: 0xe396,
+        ).toJson(),
+      ],
+    );
+    db.setList(
+      DbKeys.transactions,
+      <Map<String, dynamic>>[
+        Transaction(
+          id: 't1',
+          type: TransactionType.expense,
+          amount: 10,
+          categoryId: 'mercado',
+          date: DateTime(2026, 11, 21),
+          description: 'Compra',
+        ).toJson(),
+        Transaction(
+          id: 't2',
+          type: TransactionType.expense,
+          amount: 20,
+          categoryId: 'farmacia',
+          date: DateTime(2026, 11, 20),
+          description: 'Receita',
+        ).toJson(),
+      ],
+    );
+    final FinanceController finance = FinanceController(db);
+
+    expect(
+      finance.filtered(search: 'super').map((t) => t.id).toList(),
+      <String>['t1'],
+    );
+    expect(
+      finance.filtered(search: 'farm').map((t) => t.id).toList(),
+      <String>['t2'],
+    );
+    expect(
+      finance.filtered(search: 'compra').map((t) => t.id).toList(),
+      <String>['t1'],
+    );
+    expect(finance.filtered(search: 'inexistente'), isEmpty);
   });
 
   testWidgets('item do extrato mostra a data mesmo com descrição longa', (

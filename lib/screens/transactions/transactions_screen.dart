@@ -104,7 +104,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     controller: _search,
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
-                      hintText: 'Buscar por descrição...',
+                      hintText: 'Busca',
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon:
                           _search.text.isEmpty
