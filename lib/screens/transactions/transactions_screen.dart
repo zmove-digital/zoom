@@ -72,6 +72,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     final double income = finance.sumFor(list, TransactionType.income);
     final double expense = finance.sumFor(list, TransactionType.expense);
+    final bool hasFilter =
+        _search.text.trim().isNotEmpty ||
+        _typeFilter != null ||
+        (_categoryFilter?.isNotEmpty ?? false);
 
     // Saldo disponível: saldo inicial das contas + somente lançamentos
     // efetivados - valores guardados em metas. Lançamentos pendentes não entram.
@@ -95,6 +99,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     expense,
                     availableBalance,
                   ),
+                  if (hasFilter) ...<Widget>[
+                    const SizedBox(height: 10),
+                    _filteredTotalCard(theme, sym, list.length, income - expense),
+                  ],
                   if (overdueCount > 0) ...<Widget>[
                     const SizedBox(height: 10),
                     _overdueBanner(theme, overdueCount),
@@ -282,6 +290,60 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           IconButton(
             onPressed: () => _changeMonth(1),
             icon: const Icon(Icons.chevron_right),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Somatário dos lançamentos que passaram por busca/tipo/categoria.
+  Widget _filteredTotalCard(
+    ThemeData theme,
+    String sym,
+    int count,
+    double total,
+  ) {
+    final Color totalColor =
+        total >= 0
+            ? const Color(0xFF06D6A0)
+            : theme.colorScheme.error;
+
+    return SectionCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.filter_list, color: theme.colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Total dos filtrados',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$count ${count == 1 ? 'lançamento' : 'lançamentos'}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              Money.format(total, '', symbol: sym),
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: totalColor,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
         ],
       ),
