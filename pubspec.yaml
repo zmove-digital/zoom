@@ -39,10 +39,10 @@ flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
-  image_path: "store/zoom_512.png"
+  image_path: "store/icone_google_play_512.png"
   windows:
     generate: true
-    image_path: "store/zoom_512.png"
+    image_path: "store/icone_google_play_512.png"
     icon_size: 256
 
 flutter:
