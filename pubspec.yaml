@@ -40,6 +40,8 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   image_path: "store/icone_google_play_512.png"
+  adaptive_icon_background: "#080911"
+  adaptive_icon_foreground: "store/icone_google_play_512.png"
   windows:
     generate: true
     image_path: "store/icone_google_play_512.png"
