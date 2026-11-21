@@ -29,6 +29,7 @@ class FinanceController extends ChangeNotifier {
       _persistAccounts();
     }
 
+    _standardizeDefaults();
     _migrateLegacySettlement();
     _migrateGoalContributions();
   }
@@ -301,6 +302,19 @@ class FinanceController extends ChangeNotifier {
   /// antes) permanecem efetivados — não viram "vencidos" por causa da mudança
   /// para efetivação manual. É idempotente: lançamentos novos sempre têm
   /// `isPaid` definido (true/false), então nunca são tocados.
+  /// Mantém as categorias/contas padrão alinhadas com o SeedData atual sem
+  /// apagar dados do usuário nem quebrar transações já salvas.
+  void _standardizeDefaults() {
+    if (!SeedData.standardizeDefaults(
+      categories: categories,
+      accounts: accounts,
+    )) {
+      return;
+    }
+    _persistCategories();
+    _persistAccounts();
+  }
+
   void _migrateLegacySettlement() {
     bool changed = false;
     for (final Transaction t in transactions) {
@@ -851,6 +865,7 @@ class FinanceController extends ChangeNotifier {
       accounts = SeedData.defaultAccounts();
       _persistAccounts();
     }
+    _standardizeDefaults();
     _migrateLegacySettlement();
     _migrateGoalContributions();
     notifyListeners();

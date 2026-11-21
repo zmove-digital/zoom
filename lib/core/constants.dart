@@ -75,6 +75,14 @@ const List<int> kCategoryIconChoices = <int>[
   0xe5c6,
   0xe13d,
   0xe2f2,
+  0xe0b2,
+  0xe553,
+  0xe4a1,
+  0xe394,
+  0xe396,
+  0xe318,
+  0xe532,
+  0xe59a,
 ];
 
 const Map<int, IconData> kIconsByCodePoint = <int, IconData>{
@@ -109,6 +117,14 @@ const Map<int, IconData> kIconsByCodePoint = <int, IconData>{
   0xe265: IconData(0xe265, fontFamily: 'MaterialIcons'),
   0xe8b6: IconData(0xe8b6, fontFamily: 'MaterialIcons'),
   0xe5d3: IconData(0xe5d3, fontFamily: 'MaterialIcons'),
+  0xe0b2: IconData(0xe0b2, fontFamily: 'MaterialIcons'),
+  0xe553: IconData(0xe553, fontFamily: 'MaterialIcons'),
+  0xe4a1: IconData(0xe4a1, fontFamily: 'MaterialIcons'),
+  0xe394: IconData(0xe394, fontFamily: 'MaterialIcons'),
+  0xe396: IconData(0xe396, fontFamily: 'MaterialIcons'),
+  0xe318: IconData(0xe318, fontFamily: 'MaterialIcons'),
+  0xe532: IconData(0xe532, fontFamily: 'MaterialIcons'),
+  0xe59a: IconData(0xe59a, fontFamily: 'MaterialIcons'),
 };
 
 const List<String> kPaletteHex = <String>[
